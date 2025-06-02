@@ -22,7 +22,14 @@
 
 #include <stdio.h>
 #include <math.h>
+#include <linux/types.h>
+#include <stdint.h>
+#include <stdbool.h>
+#include <string.h>
+#include "internal.h"
+#include "json_print.h"
 #include "sff-common.h"
+#include "module-common.h"
 
 double convert_mw_to_dbm(double mw)
 {

@@ -8,10 +8,16 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <errno.h>
+#include <linux/types.h>
+#include <stdint.h>
+#include <stdbool.h>
+#include <string.h>
 #include "internal.h"
+#include "json_print.h"
+#include "sff-common.h"
 #include "module-common.h"
-#include "netlink/extapi.h"
 
 #define SFF8079_PAGE_SIZE		0x80
 #define SFF8079_I2C_ADDRESS_LOW		0x50

@@ -10,10 +10,15 @@
 #include <stdio.h>
 #include <math.h>
 #include <errno.h>
+#include <linux/types.h>
+#include <stdint.h>
+#include <stdbool.h>
+#include <string.h>
 #include "internal.h"
+#include "json_print.h"
+#include "sff-common.h"
 #include "module-common.h"
 #include "cmis.h"
-#include "netlink/extapi.h"
 
 /* The maximum number of supported Banks. Relevant documents:
  * [1] CMIS Rev. 5, page. 128, section 8.4.4, Table 8-40

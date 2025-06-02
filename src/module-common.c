@@ -6,6 +6,13 @@
 #include <stdio.h>
 #include <math.h>
 #include <ctype.h>
+#include <linux/types.h>
+#include <stdint.h>
+#include <stdbool.h>
+#include <string.h>
+#include "internal.h"
+#include "json_print.h"
+#include "sff-common.h"
 #include "module-common.h"
 
 const struct module_aw_mod module_aw_mod_flags[] = {

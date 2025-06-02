@@ -56,11 +56,16 @@
 #include <stdio.h>
 #include <math.h>
 #include <errno.h>
+#include <linux/types.h>
+#include <stdint.h>
+#include <stdbool.h>
+#include <string.h>
 #include "internal.h"
+#include "json_print.h"
+#include "sff-common.h"
 #include "module-common.h"
 #include "qsfp.h"
 #include "cmis.h"
-#include "netlink/extapi.h"
 
 struct sff8636_memory_map {
 	const __u8 *lower_memory;

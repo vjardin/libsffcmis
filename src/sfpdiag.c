@@ -11,7 +11,12 @@
 #include <stdio.h>
 #include <math.h>
 #include <arpa/inet.h>
+#include <linux/types.h>
+#include <stdint.h>
+#include <stdbool.h>
+#include <string.h>
 #include "internal.h"
+#include "json_print.h"
 #include "module-common.h"
 
 /* Offsets in decimal, for direct comparison with the SFF specs */
