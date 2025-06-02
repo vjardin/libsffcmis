@@ -1,0 +1,15 @@
+The following files are under the LICENSE from COPYING-ethtool:
+cmis.c
+cmis.h
+json_print.c
+json_print.h
+json_writer.c
+json_writer.h
+module-common.c
+module-common.h
+qsfp.c
+qsfp.h
+sff-common.c
+sff-common.h
+sfpdiag.c
+sfpid.c
