@@ -18,6 +18,7 @@
 #include "json_print.h"
 #include "sff-common.h"
 #include "module-common.h"
+#include "sffcmis.h"
 
 #define SFF8079_PAGE_SIZE		0x80
 #define SFF8079_I2C_ADDRESS_LOW		0x50
@@ -492,13 +493,13 @@ void sff8079_show_all_ioctl(const __u8 *id)
 static int sff8079_get_eeprom_page(struct cmd_context *ctx, u8 i2c_address,
 				   __u8 *buf)
 {
-	struct ethtool_module_eeprom request = {
+	struct module_eeprom request = {
 		.length = SFF8079_PAGE_SIZE,
 		.i2c_address = i2c_address,
 	};
 	int ret;
 
-	ret = nl_get_eeprom_page(ctx, &request);
+	ret = get_eeprom_page(ctx, &request);
 	if (!ret)
 		memcpy(buf, request.data, SFF8079_PAGE_SIZE);
 

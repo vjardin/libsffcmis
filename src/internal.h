@@ -19,4 +19,17 @@ typedef uint32_t u32;
 #  define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
 #endif
 
+/* Struct for managing module EEPROM pages */
+struct module_eeprom {
+	u32	offset;
+	u32	length;
+	u8	page;
+	u8	bank;
+	u8	i2c_address;
+	u8	*data;
+};
+
+/* Optics diagnostics */
+void sff8472_show_all(const __u8 *id);
+
 #endif /* INTERNAL_H */

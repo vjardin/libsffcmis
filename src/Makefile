@@ -14,8 +14,9 @@ SRCS += sff-common.c
 SRCS += sfpdiag.c
 
 SRCS += i2c.c
+SRCS += sffcmis.c
 
-#SRCS += sfpid.c
+SRCS += sfpid.c
 #SRCS += qsfp.c
 #SRCS += cmis.c
 
