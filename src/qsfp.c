@@ -65,6 +65,7 @@
 #include "sff-common.h"
 #include "module-common.h"
 #include "qsfp.h"
+#include "sffcmis.h"
 #include "cmis.h"
 
 struct sff8636_memory_map {
@@ -1024,7 +1025,7 @@ void sff8636_show_all_ioctl(const __u8 *id, __u32 eeprom_len)
 	}
 }
 
-static void sff8636_request_init(struct ethtool_module_eeprom *request, u8 page,
+static void sff8636_request_init(struct module_eeprom *request, u8 page,
 				 u32 offset)
 {
 	request->offset = offset;
@@ -1039,7 +1040,7 @@ static int
 sff8636_memory_map_init_pages(struct cmd_context *ctx,
 			      struct sff8636_memory_map *map)
 {
-	struct ethtool_module_eeprom request;
+	struct module_eeprom request;
 	int ret;
 
 	/* Lower Memory and Page 00h are always present.
@@ -1049,13 +1050,13 @@ sff8636_memory_map_init_pages(struct cmd_context *ctx,
 	 * address minus page size.
 	 */
 	sff8636_request_init(&request, 0x0, 0);
-	ret = nl_get_eeprom_page(ctx, &request);
+	ret = get_eeprom_page(ctx, &request);
 	if (ret < 0)
 		return ret;
 	map->lower_memory = request.data;
 
 	sff8636_request_init(&request, 0x0, SFF8636_PAGE_SIZE);
-	ret = nl_get_eeprom_page(ctx, &request);
+	ret = get_eeprom_page(ctx, &request);
 	if (ret < 0)
 		return ret;
 	map->page_00h = request.data - SFF8636_PAGE_SIZE;
@@ -1068,7 +1069,7 @@ sff8636_memory_map_init_pages(struct cmd_context *ctx,
 		return 0;
 
 	sff8636_request_init(&request, 0x3, SFF8636_PAGE_SIZE);
-	ret = nl_get_eeprom_page(ctx, &request);
+	ret = get_eeprom_page(ctx, &request);
 	if (ret < 0) {
 		/* Page 03h is not available due to a bug in the driver.
 		 * This is a non-fatal error and sff8636_dom_parse()
