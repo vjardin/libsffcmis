@@ -18,7 +18,7 @@ SRCS += sffcmis.c
 
 SRCS += sfpid.c
 SRCS += qsfp.c
-#SRCS += cmis.c
+SRCS += cmis.c
 
 OBJS        := $(SRCS:.c=.o)
 

@@ -18,6 +18,7 @@
 #include "json_print.h"
 #include "sff-common.h"
 #include "module-common.h"
+#include "sffcmis.h"
 #include "cmis.h"
 
 /* The maximum number of supported Banks. Relevant documents:
@@ -1027,7 +1028,7 @@ void cmis_show_all_ioctl(const __u8 *id)
 	cmis_show_all_common(&map);
 }
 
-static void cmis_request_init(struct ethtool_module_eeprom *request, u8 bank,
+static void cmis_request_init(struct module_eeprom *request, u8 bank,
 			      u8 page, u32 offset)
 {
 	request->offset = offset;
@@ -1063,7 +1064,7 @@ static int
 cmis_memory_map_init_pages(struct cmd_context *ctx,
 			   struct cmis_memory_map *map)
 {
-	struct ethtool_module_eeprom request;
+	struct module_eeprom request;
 	int num_banks, i, ret;
 
 	/* Lower Memory and Page 00h are always present.
@@ -1073,13 +1074,13 @@ cmis_memory_map_init_pages(struct cmd_context *ctx,
 	 * address minus page size.
 	 */
 	cmis_request_init(&request, 0, 0x0, 0);
-	ret = nl_get_eeprom_page(ctx, &request);
+	ret = get_eeprom_page(ctx, &request);
 	if (ret < 0)
 		return ret;
 	map->lower_memory = request.data;
 
 	cmis_request_init(&request, 0, 0x0, CMIS_PAGE_SIZE);
-	ret = nl_get_eeprom_page(ctx, &request);
+	ret = get_eeprom_page(ctx, &request);
 	if (ret < 0)
 		return ret;
 	map->page_00h = request.data - CMIS_PAGE_SIZE;
@@ -1092,13 +1093,13 @@ cmis_memory_map_init_pages(struct cmd_context *ctx,
 		return 0;
 
 	cmis_request_init(&request, 0, 0x1, CMIS_PAGE_SIZE);
-	ret = nl_get_eeprom_page(ctx, &request);
+	ret = get_eeprom_page(ctx, &request);
 	if (ret < 0)
 		return ret;
 	map->page_01h = request.data - CMIS_PAGE_SIZE;
 
 	cmis_request_init(&request, 0, 0x2, CMIS_PAGE_SIZE);
-	ret = nl_get_eeprom_page(ctx, &request);
+	ret = get_eeprom_page(ctx, &request);
 	if (ret < 0)
 		return ret;
 	map->page_02h = request.data - CMIS_PAGE_SIZE;
@@ -1113,7 +1114,7 @@ cmis_memory_map_init_pages(struct cmd_context *ctx,
 
 	for (i = 0; i < num_banks; i++) {
 		cmis_request_init(&request, i, 0x11, CMIS_PAGE_SIZE);
-		ret = nl_get_eeprom_page(ctx, &request);
+		ret = get_eeprom_page(ctx, &request);
 		if (ret < 0)
 			return ret;
 		map->upper_memory[i][0x11] = request.data - CMIS_PAGE_SIZE;
