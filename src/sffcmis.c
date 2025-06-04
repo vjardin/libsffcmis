@@ -17,6 +17,9 @@ i2c_init(struct cmd_context *ctx)
 	char *argv = getenv("LIBSFFCMIS_ARG");
 	char *savetok = NULL;
 
+	if (argv == NULL)
+		return;
+
 	for (char *argp = strtok_r(argv, " ", &savetok);
 	     argp != NULL;
 	     argp  = strtok_r(NULL,  " ", &savetok)) {
@@ -33,6 +36,21 @@ i2c_init(struct cmd_context *ctx)
 				continue;
 			}
 			ctx->debug = strtoul(argp, &eptr, 0);
+			continue;
+		}
+		if (argp && !strcmp(argp, "--busnum")) {
+			char *eptr;
+
+			if ((argp = strtok_r(argp, " ", &savetok)) == NULL) {
+				printf("missing argument --busnum N");
+				continue;
+			}
+			argp = strtok_r(argp, " ", &savetok);
+			if ((argp == NULL) || *eptr) {
+				printf("bad argument --busnum N");
+				continue;
+			}
+			ctx->bus_num = strtoul(argp, &eptr, 0);
 			continue;
 		}
 		if (argp && (!strcmp(argp, "--json") ||

@@ -4,8 +4,8 @@
 #include "i2c.h"
 
 struct cmd_context {
-	int bus_num;
 	I2CDevice device;
+	int bus_num;
 	unsigned long debug;	/* debugging mask */
 	bool json;		/* Output JSON, if supported */
 	bool show_stats;	/* include command-specific stats */
