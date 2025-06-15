@@ -32,7 +32,7 @@ endif
 AR ?= ar
 STRIP ?= strip
 
-CFLAGS ?= -Wall -Wextra -O2 -fPIC
+CFLAGS ?= -Wall -Wextra -O0 -fPIC -g
 LDFLAGS ?= -shared -Wl,-soname,$(SONAME)
 
 DESTDIR ?=
@@ -43,6 +43,8 @@ all: $(LIB)
 
 $(LIB): $(OBJS)
 	$(LD) $(LDFLAGS) -o $@ $^
+	ln -sf $(LIB) $(SONAME)
+	ln -sf $(SONAME) $(LIBNAME).so
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
