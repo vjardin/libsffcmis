@@ -132,7 +132,7 @@ get_eeprom_page(struct cmd_context *ctx, struct module_eeprom *request)
 	if (ret < 0)
 		goto err;
 
-	return ret;
+	return 0;
 
 err:
 	free(request->data);
