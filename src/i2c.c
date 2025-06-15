@@ -71,6 +71,12 @@ void i2c_init_device(I2CDevice *device, int bus_num)
     device->chunk_bytes = PAGE_MAX_BYTES;
 
     device->bus_num = bus_num;
+
+    char buf[BUFSIZ] = "";
+    i2c_get_device_desc(device, buf, sizeof(buf));
+
+    if (strstr(buf, "CH341"))
+        device->chunk_bytes = 32;
 }
 
 
@@ -98,9 +104,9 @@ char *i2c_get_device_desc(const I2CDevice *device, char *buf, size_t size)
     }
 
     memset(buf, 0, size);
-    snprintf(buf, size, "Adapter: %s, Device address: 0x%x, tenbit: %s, internal(word) address: %d bytes, page max %d bytes, delay: %dms",
+    snprintf(buf, size, "Adapter: %s, Device address: 0x%x, tenbit: %s, internal(word) address: %d bytes, page max %d bytes, delay: %dms, chunk: %dbytes",
              adapter_name,
-             device->addr, device->tenbit ? "True" : "False", device->iaddr_bytes, device->page_bytes, device->delay);
+             device->addr, device->tenbit ? "True" : "False", device->iaddr_bytes, device->page_bytes, device->delay, device->chunk_bytes);
 
     return buf;
 }
