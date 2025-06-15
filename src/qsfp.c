@@ -57,6 +57,7 @@
 #include <math.h>
 #include <errno.h>
 #include <linux/types.h>
+#include <sys/types.h>
 #include <stdint.h>
 #include <stdbool.h>
 #include <string.h>
@@ -65,6 +66,7 @@
 #include "sff-common.h"
 #include "module-common.h"
 #include "qsfp.h"
+#include "i2c.h"
 #include "sffcmis.h"
 #include "cmis.h"
 

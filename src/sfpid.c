@@ -18,6 +18,7 @@
 #include "json_print.h"
 #include "sff-common.h"
 #include "module-common.h"
+#include "i2c.h"
 #include "sffcmis.h"
 
 #define SFF8079_PAGE_SIZE		0x80

@@ -11,88 +11,131 @@
 #include "i2c.h"
 #include "sffcmis.h"
 
-void
-i2c_init(struct cmd_context *ctx)
-{
-	char *argv = getenv("LIBSFFCMIS_ARG");
-	char *savetok = NULL;
+#define ETH_I2C_ADDRESS_LOW     0x50
+#define ETH_I2C_MAX_ADDRESS	0x7F
 
-	if (argv == NULL)
+static void
+parse_argv_init(struct cmd_context *ctx)
+{
+	const char *env = getenv("LIBSFFCMIS_ARG");
+	if (!env)
 		return;
 
-	for (char *argp = strtok_r(argv, " ", &savetok);
-	     argp != NULL;
-	     argp  = strtok_r(NULL,  " ", &savetok)) {
-		if (argp && !strcmp(argp, "--debug")) {
-			char *eptr;
+	char *argv = strdup(env);
+	if (!argv)
+		return;
 
-			if ((argp = strtok_r(argp, " ", &savetok)) == NULL) {
-				printf("missing argument --debug N");
+	char *saveptr = NULL;
+	for (char *tok = strtok_r(argv, " ", &saveptr);
+	     tok;
+	     tok = strtok_r(NULL,  " ", &saveptr)) {
+
+		/* --debug N */
+		if (!strcmp(tok, "--debug")) {
+			char *val = strtok_r(NULL, " ", &saveptr);
+			if (!val) {
+				printf("missing argument --debug N\n");
 				continue;
 			}
-			argp = strtok_r(argp, " ", &savetok);
-			if ((argp == NULL) || *eptr) {
+
+			char *endp;
+			unsigned long v = strtoul(val, &endp, 0);
+			if (*endp) {
 				printf("bad argument --debug N");
 				continue;
 			}
-			ctx->debug = strtoul(argp, &eptr, 0);
+			ctx->debug = v;
 			continue;
 		}
-		if (argp && !strcmp(argp, "--busnum")) {
-			char *eptr;
 
-			if ((argp = strtok_r(argp, " ", &savetok)) == NULL) {
-				printf("missing argument --busnum N");
+		/* --busnum N */
+		if (!strcmp(tok, "--busnum")) {
+			char *val = strtok_r(NULL, " ", &saveptr);
+			if (!val) {
+				printf("missing argument --busnum N\n");
 				continue;
 			}
-			argp = strtok_r(argp, " ", &savetok);
-			if ((argp == NULL) || *eptr) {
+
+			char *endp;
+			unsigned long v = strtoul(val, &endp, 0);
+			if (*endp) {
 				printf("bad argument --busnum N");
 				continue;
 			}
-			ctx->bus_num = strtoul(argp, &eptr, 0);
+			ctx->bus_num = v;
 			continue;
 		}
-		if (argp && (!strcmp(argp, "--json") ||
-			     !strcmp(argp, "-j"))) {
+
+		/* --json or -j toggles */
+		if (!strcmp(tok, "--json") ||
+		    !strcmp(tok, "-j")) {
 			ctx->json = true;
 			continue;
 		}
-		if (argp && (!strcmp(argp, "--include-statistics") ||
-			     !strcmp(argp, "-I"))) {
+		if (!strcmp(tok, "--include-statistics") ||
+		    !strcmp(tok, "-I")) {
 			ctx->show_stats = true;
 			continue;
 		}
+
+		fprintf(stderr, "unknown option: %s\n", tok);
 	}
+
+	free(argv);
+	return ;
+}
+
+int
+i2c_init(struct cmd_context *ctx)
+{
+	assert(ctx != NULL);
+	assert(ctx->device == NULL);
+
+	parse_argv_init(ctx);
+
+	if (ctx->bus_num == 0) {
+		printf("invalid bus_num");
+		return -EINVAL;
+	}
+	ctx->device = malloc(sizeof(*ctx->device));
+	char bus_name[PATH_MAX];
+
+	snprintf(bus_name, sizeof(bus_name), "/dev/i2c-%u", ctx->bus_num);
+
+	int bus;
+	if ((bus = i2c_open(bus_name)) == -1) {
+		fprintf(stderr, "Open i2c bus:%s error!\n", bus_name);
+		return -EIO;
+	}
+
+	i2c_init_device(ctx->device);
+
+	ctx->device->bus = bus;
+
+	return bus;
 }
 
 int
 get_eeprom_page(struct cmd_context *ctx, struct module_eeprom *request)
 {
 	assert(ctx != NULL);
-	assert(request != NULL);
+
+	if (!request || request->i2c_address > ETH_I2C_MAX_ADDRESS)
+		return -EINVAL;
+
 	assert(ctx->bus_num >= 0);
 
-	if (ctx->device.bus < 0) {
-		char bus_name[PATH_MAX];
+	ctx->device->addr = request->i2c_address & 0x3ff;
+	request->data = malloc(request->length);
 
-		snprintf(bus_name, sizeof(bus_name), "/dev/i2c-%u", ctx->bus_num);
+	int ret = i2c_ioctl_read(ctx->device, request->offset, request->data, request->length);
+	if (ret < 0)
+		goto err;
 
-		int bus;
-		if ((bus = i2c_open(bus_name)) == -1) {
-			fprintf(stderr, "Open i2c bus:%s error!\n", bus_name);
-			return -EIO;
-		}
+	return ret;
 
-		i2c_init_device(&ctx->device);
-
-		ctx->device.bus = bus;
-	}
-
-	ctx->device.addr = request->i2c_address & 0x3ff;
-
-	int ret = i2c_ioctl_read(&ctx->device, request->i2c_address, request->data, request->length);
-
+err:
+	free(request->data);
 	return ret;
 }
 
@@ -131,8 +174,6 @@ get_eeprom_page(struct cmd_context *ctx, struct module_eeprom *request)
 #define  MODULE_ID_UNALLOCATED_LAST	0x7F
 #define  MODULE_ID_VENDOR_START		0x80
 #define  MODULE_ID_VENDOR_LAST			0xFF
-
-#define ETH_I2C_ADDRESS_LOW     0x50
 
 int eeprom_parse(struct cmd_context *ctx)
 {

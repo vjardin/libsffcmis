@@ -5,6 +5,7 @@
 #include <fcntl.h>
 #include <sys/ioctl.h>
 #include <arpa/inet.h>
+#include <err.h>
 #include "i2c.h"
 
 /* I2C default delay */
@@ -142,7 +143,7 @@ ssize_t i2c_ioctl_read(const I2CDevice *device, unsigned int iaddr, void *buf, s
     /* Using ioctl interface operation i2c device */
     if (ioctl(device->bus, I2C_RDWR, (unsigned long)&ioctl_data) == -1) {
 
-        perror("Ioctl read i2c error:");
+        warn("Ioctl read %ld bytes @ %d i2c error:", len, iaddr);
         return -1;
     }
 
@@ -187,7 +188,7 @@ ssize_t i2c_ioctl_write(const I2CDevice *device, unsigned int iaddr, const void 
 
         if (ioctl(device->bus, I2C_RDWR, (unsigned long)&ioctl_data) == -1) {
 
-            perror("Ioctl write i2c error:");
+            warn("Ioctl write i2c error:");
             return -1;
         }
 
@@ -231,7 +232,7 @@ ssize_t i2c_read(const I2CDevice *device, unsigned int iaddr, void *buf, size_t 
     /* Write internal address to devide  */
     if (write(device->bus, addr, device->iaddr_bytes) != device->iaddr_bytes) {
 
-        perror("Write i2c internal address error");
+        warn("Write i2c internal address error");
         return -1;
     }
 
@@ -241,7 +242,7 @@ ssize_t i2c_read(const I2CDevice *device, unsigned int iaddr, void *buf, size_t 
     /* Read count bytes data from int_addr specify address */
     if ((cnt = read(device->bus, buf, len)) == -1) {
 
-        perror("Read i2c data error");
+        warn("Read i2c data error");
         return -1;
     }
 
@@ -289,7 +290,7 @@ ssize_t i2c_write(const I2CDevice *device, unsigned int iaddr, const void *buf, 
         ret = write(device->bus, tmp_buf, device->iaddr_bytes + size);
         if (ret == -1 || (size_t)ret != device->iaddr_bytes + size)
         {
-            perror("I2C write error:");
+            warn("I2C write error:");
             return -1;
         }
 
@@ -346,14 +347,14 @@ int i2c_select(int bus, unsigned long dev_addr, unsigned long tenbit)
     /* Set i2c device address bit */
     if (ioctl(bus, I2C_TENBIT, tenbit)) {
 
-        perror("Set I2C_TENBIT failed");
+        warn("Set I2C_TENBIT failed");
         return -1;
     }
 
     /* Set i2c device as slave ans set it address */
     if (ioctl(bus, I2C_SLAVE, dev_addr)) {
 
-        perror("Set i2c device address failed");
+        warn("Set i2c device address failed");
         return -1;
     }
 
