@@ -1,3 +1,4 @@
 *.o
 *.so
 *.so.*
+test/sffcmis_test
