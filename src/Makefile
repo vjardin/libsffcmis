@@ -31,6 +31,7 @@ LD :=$(CC)
 endif
 AR ?= ar
 STRIP ?= strip
+INSTALL ?= install
 
 CFLAGS ?= -Wall -Wextra -O0 -fPIC -g
 LDFLAGS ?= -shared -Wl,-soname,$(SONAME)
@@ -53,8 +54,8 @@ clean:
 	$(RM) -f *.o $(LIB)
 
 install: $(LIB)
-	install -d $(INSTALL_LIB)
-	install -m 0755 $(LIB) $(INSTALL_LIB)/
+	$(INSTALL) -d $(INSTALL_LIB)
+	$(INSTALL) -m 0755 $(LIB) $(INSTALL_LIB)/
 	ln -sf $(LIB) $(INSTALL_LIB)/$(SONAME)
 	ln -sf $(SONAME) $(INSTALL_LIB)/$(LIBNAME).so
 

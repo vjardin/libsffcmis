@@ -2,6 +2,7 @@ CC ?= gcc
 LD ?= $(CC)
 AR ?= $(CROSS_COMPILE)ar
 STRIP ?= $(CROSS_COMPILE)strip
+INSTALL ?= install
 
 TOP      := ..
 INCLUDES := -I$(TOP)/src

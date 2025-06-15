@@ -1,9 +1,11 @@
 SUBDIRS+=src
 SUBDIRS+=test
 
-.PHONY: all clean $(SUBDIRS)
+.PHONY: all clean install $(SUBDIRS)
 
 all: $(SUBDIRS)
+
+install: $(SUBDIRS)
 
 $(SUBDIRS):
 	$(MAKE) -C $@ $(MAKECMDGOALS)
