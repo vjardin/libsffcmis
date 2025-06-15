@@ -12,6 +12,7 @@ extern "C" {
 /* I2c device */
 typedef struct i2c_device {
     int bus;			        /* I2C Bus fd, return from i2c_open */
+    int bus_num;			/* I2C Bus ID */
     unsigned short addr;		/* I2C device(slave) address */
     unsigned char tenbit;		/* I2C is 10 bit device address */
     unsigned char delay;		/* I2C internal operation delay, unit millisecond */
@@ -27,7 +28,7 @@ void i2c_close(int bus);
 int i2c_open(const char *bus_name);
 
 /* Initialize I2CDevice with default value */
-void i2c_init_device(I2CDevice *device);
+void i2c_init_device(I2CDevice *device, int bus_num);
 
 /* Get i2c device description */
 char *i2c_get_device_desc(const I2CDevice *device, char *buf, size_t size);

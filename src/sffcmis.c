@@ -108,7 +108,7 @@ i2c_init(struct cmd_context *ctx)
 		return -EIO;
 	}
 
-	i2c_init_device(ctx->device);
+	i2c_init_device(ctx->device, ctx->bus_num);
 
 	ctx->device->bus = bus;
 

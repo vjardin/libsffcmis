@@ -7,6 +7,7 @@
 int
 main(int argc, char *argv[]) {
 	struct cmd_context ctx;
+	char desc[BUFSIZ];
 
 	if (argc != 2) {
 		printf("Missing argument\n");
@@ -17,6 +18,7 @@ main(int argc, char *argv[]) {
 		.bus_num = atoi(argv[1]),
 	};
 	i2c_init(&ctx);
+	printf("i2c_get_device_desc: %s\n", i2c_get_device_desc(ctx.device, desc, sizeof(desc)));
 	int ret = eeprom_parse(&ctx);
 
 	if (ret)

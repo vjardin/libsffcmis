@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
+#include <limits.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <sys/ioctl.h>
@@ -52,7 +53,7 @@ void i2c_close(int bus)
 **	@brief		:	Initialize I2CDevice with defualt value
 **	#device	    :	I2CDevice struct
 */
-void i2c_init_device(I2CDevice *device)
+void i2c_init_device(I2CDevice *device, int bus_num)
 {
     /* 7 bit device address */
     device->tenbit = 0;
@@ -65,6 +66,8 @@ void i2c_init_device(I2CDevice *device)
 
     /* 1 byte internal(word) address */
     device->iaddr_bytes = 1;
+
+    device->bus_num = bus_num;
 }
 
 
@@ -77,8 +80,23 @@ void i2c_init_device(I2CDevice *device)
 */
 char *i2c_get_device_desc(const I2CDevice *device, char *buf, size_t size)
 {
+    char adapter_name[128] = "Unknown";
+    char sysfs_path[PATH_MAX];
+
+    snprintf(sysfs_path, sizeof(sysfs_path), "/sys/class/i2c-adapter/i2c-%d/name", device->bus_num);
+
+    FILE *f = fopen(sysfs_path, "r");
+    if (f) {
+        if (fgets(adapter_name, sizeof(adapter_name), f)) {
+            /* drop trailing newline if any */
+            adapter_name[strcspn(adapter_name, "\n")] = 0;
+        }
+        fclose(f);
+    }
+
     memset(buf, 0, size);
-    snprintf(buf, size, "Device address: 0x%x, tenbit: %s, internal(word) address: %d bytes, page max %d bytes, delay: %dms",
+    snprintf(buf, size, "Adapter: %s, Device address: 0x%x, tenbit: %s, internal(word) address: %d bytes, page max %d bytes, delay: %dms",
+             adapter_name,
              device->addr, device->tenbit ? "True" : "False", device->iaddr_bytes, device->page_bytes, device->delay);
 
     return buf;
