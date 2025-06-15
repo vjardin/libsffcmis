@@ -10,7 +10,7 @@ main(int argc, char *argv[]) {
 	char desc[BUFSIZ];
 
 	if (argc != 2) {
-		printf("Missing argument\n");
+		printf("Missing argument: i2c bus id\n");
 		return EXIT_SUCCESS;
 	}
 
