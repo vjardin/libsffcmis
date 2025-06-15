@@ -8,7 +8,7 @@ int
 main(int argc, char *argv[]) {
 	struct cmd_context ctx;
 
-	if (argc != 1) {
+	if (argc != 2) {
 		printf("Missing argument\n");
 		return EXIT_SUCCESS;
 	}
