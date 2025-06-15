@@ -19,6 +19,7 @@ typedef struct i2c_device {
     unsigned short flags;		/* I2C i2c_ioctl_read/write flags */
     unsigned int page_bytes;    /* I2C max number of bytes per page, 1K/2K 8, 4K/8K/16K 16, 32K/64K 32 etc */
     unsigned int iaddr_bytes;   /* I2C device internal(word) address bytes, such as: 24C04 1 byte, 24C64 2 bytes */
+    unsigned int chunk_bytes;   /* I2C max bytes to be read()/write() using 1 system call */
 } I2CDevice;
 
 /* Close i2c bus */

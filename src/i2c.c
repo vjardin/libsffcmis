@@ -67,6 +67,9 @@ void i2c_init_device(I2CDevice *device, int bus_num)
     /* 1 byte internal(word) address */
     device->iaddr_bytes = 1;
 
+    /* max bytes to be read with 1 system call */
+    device->chunk_bytes = PAGE_MAX_BYTES;
+
     device->bus_num = bus_num;
 }
 
@@ -114,58 +117,69 @@ char *i2c_get_device_desc(const I2CDevice *device, char *buf, size_t size)
 */
 ssize_t i2c_ioctl_read(const I2CDevice *device, unsigned int iaddr, void *buf, size_t len)
 {
-    struct i2c_msg ioctl_msg[2];
-    struct i2c_rdwr_ioctl_data ioctl_data;
-    unsigned char addr[INT_ADDR_MAX_BYTES];
-    unsigned short flags = GET_I2C_FLAGS(device->tenbit, device->flags);
+    ssize_t total_read = 0;
+    unsigned char *p = (unsigned char *)buf;
+    unsigned int remaining = len;
 
-    memset(addr, 0, sizeof(addr));
-    memset(ioctl_msg, 0, sizeof(ioctl_msg));
-    memset(&ioctl_data, 0, sizeof(ioctl_data));
+    while(remaining > 0) {
+        size_t chunk = remaining > device->chunk_bytes ? device->chunk_bytes : remaining;
 
-    /* Target have internal address */
-    if (device->iaddr_bytes) {
+        struct i2c_msg ioctl_msg[2];
+        struct i2c_rdwr_ioctl_data ioctl_data;
+        unsigned char addr[INT_ADDR_MAX_BYTES];
+        unsigned short flags = GET_I2C_FLAGS(device->tenbit, device->flags);
 
-        i2c_iaddr_convert(iaddr, device->iaddr_bytes, addr);
+        memset(addr, 0, sizeof(addr));
+        memset(ioctl_msg, 0, sizeof(ioctl_msg));
+        memset(&ioctl_data, 0, sizeof(ioctl_data));
 
-        /* First message is write internal address */
-        ioctl_msg[0].len	=	device->iaddr_bytes;
-        ioctl_msg[0].addr	= 	device->addr;
-        ioctl_msg[0].buf	= 	addr;
-        ioctl_msg[0].flags	= 	flags;
+        /* Target have internal address */
+        if (device->iaddr_bytes) {
 
-        /* Second message is read data */
-        ioctl_msg[1].len	= 	len;
-        ioctl_msg[1].addr	= 	device->addr;
-        ioctl_msg[1].buf	=	buf;
-        ioctl_msg[1].flags	=	flags | I2C_M_RD;
+            i2c_iaddr_convert(iaddr, device->iaddr_bytes, addr);
 
-        /* Package to i2c message to operation i2c device */
-        ioctl_data.nmsgs	=	2;
-        ioctl_data.msgs		=	ioctl_msg;
+            /* First message is write internal address */
+            ioctl_msg[0].len	=	device->iaddr_bytes;
+            ioctl_msg[0].addr	= 	device->addr;
+            ioctl_msg[0].buf	= 	addr;
+            ioctl_msg[0].flags	= 	flags;
+
+            /* Second message is read data */
+            ioctl_msg[1].len	= 	chunk;
+            ioctl_msg[1].addr	= 	device->addr;
+            ioctl_msg[1].buf	=	p + total_read;
+            ioctl_msg[1].flags	=	flags | I2C_M_RD;
+
+            /* Package to i2c message to operation i2c device */
+            ioctl_data.nmsgs	=	2;
+            ioctl_data.msgs	=	ioctl_msg;
+        }
+        /* Target did not have internal address */
+        else {
+
+            /* Direct send read data message */
+            ioctl_msg[0].len	= 	chunk;
+            ioctl_msg[0].addr	= 	device->addr;
+            ioctl_msg[0].buf	=	p + total_read;
+            ioctl_msg[0].flags	=	flags | I2C_M_RD;
+
+            /* Package to i2c message to operation i2c device */
+            ioctl_data.nmsgs	=	1;
+            ioctl_data.msgs	=	ioctl_msg;
+        }
+
+        /* Using ioctl interface operation i2c device */
+        if (ioctl(device->bus, I2C_RDWR, (unsigned long)&ioctl_data) == -1) {
+
+            warn("Partial ioctl read %ld bytes @ %ld i2c error:", chunk, iaddr + total_read);
+            return (total_read > 0) ? total_read : (ssize_t)-1;
+        }
+
+        total_read += chunk;
+        remaining  -= chunk;
     }
-    /* Target did not have internal address */
-    else {
 
-        /* Direct send read data message */
-        ioctl_msg[0].len	= 	len;
-        ioctl_msg[0].addr	= 	device->addr;
-        ioctl_msg[0].buf	=	buf;
-        ioctl_msg[0].flags	=	flags | I2C_M_RD;
-
-        /* Package to i2c message to operation i2c device */
-        ioctl_data.nmsgs	=	1;
-        ioctl_data.msgs		=	ioctl_msg;
-    }
-
-    /* Using ioctl interface operation i2c device */
-    if (ioctl(device->bus, I2C_RDWR, (unsigned long)&ioctl_data) == -1) {
-
-        warn("Ioctl read %ld bytes @ %d i2c error:", len, iaddr);
-        return -1;
-    }
-
-    return len;
+    return total_read;
 }
 
 
