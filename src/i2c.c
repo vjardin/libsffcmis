@@ -254,8 +254,13 @@ ssize_t i2c_ioctl_write(const I2CDevice *device, unsigned int iaddr, const void 
 ssize_t i2c_read(const I2CDevice *device, unsigned int iaddr, void *buf, size_t len)
 {
     ssize_t cnt;
+    size_t remaining = len;
+    size_t total_read = 0;
     unsigned char addr[INT_ADDR_MAX_BYTES];
     unsigned char delay = GET_I2C_DELAY(device->delay);
+
+    if (len == 0)
+        return 0;
 
     /* Set i2c slave address */
     if (i2c_select(device->bus, device->addr, device->tenbit) == -1) {
@@ -263,28 +268,39 @@ ssize_t i2c_read(const I2CDevice *device, unsigned int iaddr, void *buf, size_t 
         return -1;
     }
 
-    /* Convert i2c internal address */
-    memset(addr, 0, sizeof(addr));
-    i2c_iaddr_convert(iaddr, device->iaddr_bytes, addr);
+    while (remaining > 0) {
+        size_t chunk = remaining > device->chunk_bytes ? device->chunk_bytes : remaining;
 
-    /* Write internal address to devide  */
-    if (write(device->bus, addr, device->iaddr_bytes) != device->iaddr_bytes) {
+        /* Convert i2c internal address */
+        memset(addr, 0, sizeof(addr));
+        i2c_iaddr_convert(iaddr, device->iaddr_bytes, addr);
 
-        warn("Write i2c internal address error");
-        return -1;
+        /* Write internal address to devide */
+        if (write(device->bus, addr, device->iaddr_bytes) != device->iaddr_bytes) {
+
+            warn("Write i2c internal address error");
+            return -1;
+        }
+
+        /* Wait a while */
+        i2c_delay(delay);
+
+        /* Read one chucnk bytes data from int_addr specify address */
+        cnt = read(device->bus, (unsigned char *)buf + total_read, chunk);
+        if ((cnt != (ssize_t)chunk)) {
+
+            warn("Read i2c data error");
+            return -1;
+        }
+
+	/* Advance cursors */
+	total_read += chunk;
+	remaining -= chunk;
+	iaddr += chunk; /* next internal offset */
     }
 
-    /* Wait a while */
-    i2c_delay(delay);
-
-    /* Read count bytes data from int_addr specify address */
-    if ((cnt = read(device->bus, buf, len)) == -1) {
-
-        warn("Read i2c data error");
-        return -1;
-    }
-
-    return cnt;
+    /* is len on usccess */
+    return (ssize_t)total_read;
 }
 
 

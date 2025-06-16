@@ -128,9 +128,15 @@ get_eeprom_page(struct cmd_context *ctx, struct module_eeprom *request)
 	ctx->device->addr = request->i2c_address & 0x3ff;
 	request->data = malloc(request->length);
 
+#if 0
 	int ret = i2c_ioctl_read(ctx->device, request->offset, request->data, request->length);
 	if (ret < 0)
 		goto err;
+#else
+	int ret = i2c_read(ctx->device, request->offset, request->data, request->length);
+	if (ret < 0)
+		goto err;
+#endif
 
 	return 0;
 
