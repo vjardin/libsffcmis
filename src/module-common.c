@@ -315,11 +315,8 @@ void module_show_lane_status(const char *name, unsigned int lane_cnt,
 
 	convert_json_field_name(name, json_fn);
 
-	if (!value) {
-		if (is_json_context())
-			print_bool(PRINT_JSON, json_fn, NULL, false);
-		else
-			printf("\t%-41s : None\n", name);
+	if (!value && !is_json_context()) {
+		printf("\t%-41s : None\n", name);
 		return;
 	}
 
@@ -327,8 +324,7 @@ void module_show_lane_status(const char *name, unsigned int lane_cnt,
 		open_json_array(json_fn, "");
 
 		while (lane_cnt--) {
-			print_string(PRINT_JSON, NULL, "%s",
-				     value & 1 ? yes : no);
+			print_bool(PRINT_JSON, NULL, NULL, value & 1);
 			value >>= 1;
 		}
 		close_json_array("");

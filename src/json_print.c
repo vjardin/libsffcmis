@@ -138,12 +138,14 @@ void print_string(enum output_type type,
 			jsonw_name(_jw, key);
 		else if (!key && value)
 			jsonw_string(_jw, value);
-		else
+		else if (key && value)
 			jsonw_string_field(_jw, key, value);
 	} else if (_IS_FP_CONTEXT(type)) {
-		fprintf(stdout, fmt, value);
+		if (value)
+			fprintf(stdout, fmt, value);
 	}
 }
+
 
 /*
  * value's type is bool. When using this function in FP context you can't pass
