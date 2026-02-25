@@ -259,9 +259,9 @@ void sff8472_show_all(const __u8 *id)
 	if (!sd.supports_dom)
 		return;
 
-	PRINT_BIAS_ALL("Laser bias current", "laser_bias_current",
+	PRINT_BIAS_ALL("Laser bias current", "laser_tx_bias_current",
 		       sd.bias_cur[MCURR]);
-	PRINT_xX_PWR_ALL("Laser output power", "laser_output_power",
+	PRINT_xX_PWR_ALL("Laser output power", "transmit_avg_optical_power",
 			 sd.tx_power[MCURR]);
 
 	if (!sd.rx_power_type)

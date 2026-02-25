@@ -143,9 +143,10 @@ void print_string(enum output_type type,
 	} else if (_IS_FP_CONTEXT(type)) {
 		if (value)
 			fprintf(stdout, fmt, value);
+		else
+			fprintf(stdout, "%s", fmt);
 	}
 }
-
 
 /*
  * value's type is bool. When using this function in FP context you can't pass

@@ -658,8 +658,8 @@ void module_show_mit_compliance(u16 value)
 
 void module_show_dom_mod_lvl_monitors(const struct sff_diags *sd)
 {
-	PRINT_TEMP_ALL("Module temperature", "module_temperature",
+	PRINT_TEMP_ALL("Module temperature", "module_temperature_measurement",
 		       sd->sfp_temp[MCURR]);
-	PRINT_VCC_ALL("Module voltage", "module_voltage",
+	PRINT_VCC_ALL("Module voltage", "module_voltage_measurement",
 		      sd->sfp_voltage[MCURR]);
 }

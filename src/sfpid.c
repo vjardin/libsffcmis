@@ -528,22 +528,23 @@ int sff8079_show_all_nl(struct cmd_context *ctx)
 	new_json_obj(ctx->json);
 	open_json_object(NULL);
 	sff8079_show_all_common(buf);
-	close_json_object();
-	delete_json_obj();
 
 	/* Finish if A2h page is not present */
 	if (!(buf[92] & (1 << 6)))
-		goto out;
+		goto out_json;
 
 	/* Read A2h page */
 	ret = sff8079_get_eeprom_page(ctx, SFF8079_I2C_ADDRESS_HIGH,
 				      buf + ETH_MODULE_SFF_8079_LEN);
 	if (ret) {
 		fprintf(stderr, "Failed to read Page A2h.\n");
-		goto out;
+		goto out_json;
 	}
 
 	sff8472_show_all(buf);
+out_json:
+	close_json_object();
+	delete_json_obj();
 out:
 	free(buf);
 
