@@ -59,6 +59,23 @@
     "t51_cdb_features_json":      { "expect": "pass" },
     "t52_cdb_pm_json":            { "expect": "pass" },
     "t53_cdb_features_text":      { "expect": "pass" },
-    "t54_cdb_pm_text":            { "expect": "xfail", "reason": "CDB PM text output format changed" }
+    "t54_cdb_pm_text":            { "expect": "xfail", "reason": "CDB PM text output format changed" },
+
+    "t60_xfp_json_valid":         { "expect": "skip", "reason": "XFP-only test" },
+    "t61_xfp_identifier":         { "expect": "skip", "reason": "XFP-only test" },
+    "t62_xfp_connector":          { "expect": "skip", "reason": "XFP-only test" },
+    "t63_xfp_vendor":             { "expect": "skip", "reason": "XFP-only test" },
+    "t64_xfp_wavelength":         { "expect": "skip", "reason": "XFP-only test" },
+    "t65_xfp_transceiver":        { "expect": "skip", "reason": "XFP-only test" },
+    "t66_xfp_encoding":           { "expect": "skip", "reason": "XFP-only test" },
+    "t67_xfp_diag_readings":      { "expect": "skip", "reason": "XFP-only test" },
+    "t68_xfp_thresholds":         { "expect": "skip", "reason": "XFP-only test" },
+    "t69_xfp_threshold_order":    { "expect": "skip", "reason": "XFP-only test" },
+    "t70_xfp_flags":              { "expect": "skip", "reason": "XFP-only test" },
+    "t71_xfp_enhanced_opts":      { "expect": "skip", "reason": "XFP-only test" },
+    "t72_xfp_raw_memory":         { "expect": "skip", "reason": "XFP-only test" },
+    "t73_xfp_text_serial":        { "expect": "skip", "reason": "XFP-only test" },
+    "t74_xfp_text_diag":          { "expect": "skip", "reason": "XFP-only test" },
+    "t75_xfp_temp_sane":          { "expect": "skip", "reason": "XFP-only test" }
   }
 }
