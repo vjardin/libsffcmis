@@ -20,34 +20,74 @@
 #define SPRINT_BUF(x)   char x[SPRINT_BSIZE]
 
 static json_writer_t *_jw;
+static bool _jw_has_array;
+static bool _jw_deferred_plain;
 
-#define _IS_JSON_CONTEXT(type) ((type & PRINT_JSON || type & PRINT_ANY) && _jw)
-#define _IS_FP_CONTEXT(type) (!_jw && (type & PRINT_FP || type & PRINT_ANY))
+#define _IS_JSON_CONTEXT(type) \
+	((type & PRINT_JSON || type & PRINT_ANY) && (_jw || _jw_deferred_plain))
+#define _IS_FP_CONTEXT(type) \
+	(!_jw && !_jw_deferred_plain && (type & PRINT_FP || type & PRINT_ANY))
 
-void new_json_obj(int json)
+static void _ensure_plain_writer(void)
 {
-	if (json) {
+	if (_jw_deferred_plain && !_jw) {
 		_jw = jsonw_new(stdout);
 		if (!_jw) {
 			perror("json object");
 			exit(1);
 		}
 		jsonw_pretty(_jw, true);
-		jsonw_start_array(_jw);
+		jsonw_start_object(_jw);
+		_jw_has_array = false;
+		_jw_deferred_plain = false;
+	}
+}
+
+void new_json_obj(int json)
+{
+	if (json) {
+		/* Cancel any deferred plain init — array mode takes over */
+		_jw_deferred_plain = false;
+
+		if (!_jw) {
+			_jw = jsonw_new(stdout);
+			if (!_jw) {
+				perror("json object");
+				exit(1);
+			}
+			jsonw_pretty(_jw, true);
+			jsonw_start_array(_jw);
+			_jw_has_array = true;
+		}
+	}
+}
+
+void new_json_obj_plain(int json)
+{
+	if (json && !_jw) {
+		_jw_deferred_plain = true;
 	}
 }
 
 void delete_json_obj(void)
 {
+	if (_jw_deferred_plain && !_jw) {
+		/* Nothing was written — just reset the flag */
+		_jw_deferred_plain = false;
+		return;
+	}
 	if (_jw) {
-		jsonw_end_array(_jw);
+		if (_jw_has_array)
+			jsonw_end_array(_jw);
+		else
+			jsonw_end_object(_jw);
 		jsonw_destroy(&_jw);
 	}
 }
 
 bool is_json_context(void)
 {
-	return _jw != NULL;
+	return _jw != NULL || _jw_deferred_plain;
 }
 
 json_writer_t *get_json_writer(void)
@@ -57,6 +97,7 @@ json_writer_t *get_json_writer(void)
 
 void open_json_object(const char *str)
 {
+	_ensure_plain_writer();
 	if (_IS_JSON_CONTEXT(PRINT_JSON)) {
 		if (str)
 			jsonw_name(_jw, str);
@@ -77,6 +118,7 @@ void close_json_object(void)
  */
 void open_json_array(const char *key, const char *str)
 {
+	_ensure_plain_writer();
 	if (is_json_context()) {
 		if (key)
 			jsonw_name(_jw, key);

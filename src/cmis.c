@@ -21,28 +21,12 @@
 #include "module-common.h"
 #include "i2c.h"
 #include "sffcmis.h"
-#include "cmis.h"
+#include "cmis-internal.h"
 
-/* The maximum number of supported Banks. Relevant documents:
- * [1] CMIS Rev. 5, page. 128, section 8.4.4, Table 8-40
- */
-#define CMIS_MAX_BANKS	4
-#define CMIS_CHANNELS_PER_BANK	8
-#define CMIS_MAX_CHANNEL_NUM	(CMIS_MAX_BANKS * CMIS_CHANNELS_PER_BANK)
-
-/* We are not parsing further than Page 11h. */
-#define CMIS_MAX_PAGES	18
-
-struct cmis_memory_map {
-	const __u8 *lower_memory;
-	const __u8 *upper_memory[CMIS_MAX_BANKS][CMIS_MAX_PAGES];
+/* Page convenience macros for struct cmis_memory_map */
 #define page_00h upper_memory[0x0][0x0]
 #define page_01h upper_memory[0x0][0x1]
 #define page_02h upper_memory[0x0][0x2]
-};
-
-#define CMIS_PAGE_SIZE		0x80
-#define CMIS_I2C_ADDRESS	0x50
 
 static void cmis_show_identifier(const struct cmis_memory_map *map)
 {
@@ -264,9 +248,10 @@ static void cmis_show_mit_compliance(const struct cmis_memory_map *map)
 {
 	u16 value = map->page_00h[CMIS_MEDIA_INTF_TECH_OFFSET];
 
-	module_show_mit_compliance(value);
+	module_show_mit_compliance(value, MODULE_TYPE_CMIS);
 
-	if (value >= CMIS_COPPER_UNEQUAL) {
+	if ((value >= CMIS_COPPER_UNEQUAL && value <= CMIS_COPPER_LINEAR_EQUAL) ||
+	    (value >= CMIS_COPPER_NF_LINEAR_EQUAL && value <= CMIS_COPPER_N_LINEAR_EQUAL)) {
 		module_print_any_uint("Attenuation at 5GHz",
 				      map->page_00h[CMIS_COPPER_ATT_5GHZ], "db");
 		module_print_any_uint("Attenuation at 7GHz",
@@ -284,7 +269,7 @@ static void cmis_show_mit_compliance(const struct cmis_memory_map *map)
 				       "nm");
 		module_print_any_float("Laser wavelength tolerance",
 				       (((map->page_01h[CMIS_WAVELENGTH_TOL_MSB] << 8) |
-				        map->page_01h[CMIS_NOM_WAVELENGTH_LSB]) * 0.05),
+				        map->page_01h[CMIS_WAVELENGTH_TOL_LSB]) * 0.05),
 				       "nm");
 	}
 }
@@ -329,8 +314,7 @@ static void cmis_show_vendor_info(const struct cmis_memory_map *map)
 			  CMIS_VENDOR_REV_END_OFFSET, "Vendor rev");
 	module_show_ascii(map->page_00h, CMIS_VENDOR_SN_START_OFFSET,
 			  CMIS_VENDOR_SN_END_OFFSET, "Vendor SN");
-	module_show_ascii(map->page_00h, CMIS_DATE_YEAR_OFFSET,
-			  CMIS_DATE_VENDOR_LOT_OFFSET + 1, "Date code");
+	module_show_date_code(map->page_00h, CMIS_DATE_YEAR_OFFSET);
 
 	clei = (const char *)(map->page_00h + CMIS_CLEI_START_OFFSET);
 	if (*clei && strncmp(clei, CMIS_CLEI_BLANK, CMIS_CLEI_LEN))
@@ -980,7 +964,7 @@ static void cmis_show_cdb_adver(const struct cmis_memory_map *map)
 	cmis_show_cdb_trigger(map);
 }
 
-static void cmis_show_all_common(const struct cmis_memory_map *map)
+void cmis_show_all_common(const struct cmis_memory_map *map)
 {
 	cmis_show_identifier(map);
 	cmis_show_power_info(map);
@@ -1030,8 +1014,8 @@ void cmis_show_all_ioctl(const __u8 *id)
 	cmis_show_all_common(&map);
 }
 
-static void cmis_request_init(struct module_eeprom *request, u8 bank,
-			      u8 page, u32 offset)
+void cmis_request_init(struct module_eeprom *request, u8 bank,
+		       u8 page, u32 offset)
 {
 	request->offset = offset;
 	request->length = CMIS_PAGE_SIZE;
@@ -1041,8 +1025,8 @@ static void cmis_request_init(struct module_eeprom *request, u8 bank,
 	request->data = NULL;
 }
 
-static int cmis_num_banks_get(const struct cmis_memory_map *map,
-			      int *p_num_banks)
+int cmis_num_banks_get(const struct cmis_memory_map *map,
+		       int *p_num_banks)
 {
 	switch (map->page_01h[CMIS_PAGES_ADVER_OFFSET] &
 		CMIS_BANKS_SUPPORTED_MASK) {
@@ -1062,7 +1046,7 @@ static int cmis_num_banks_get(const struct cmis_memory_map *map,
 	return 0;
 }
 
-static int
+int
 cmis_memory_map_init_pages(struct cmd_context *ctx,
 			   struct cmis_memory_map *map)
 {
@@ -1125,21 +1109,3 @@ cmis_memory_map_init_pages(struct cmd_context *ctx,
 	return 0;
 }
 
-int cmis_show_all_nl(struct cmd_context *ctx)
-{
-	struct cmis_memory_map map = {};
-	int ret;
-
-	new_json_obj(ctx->json);
-	open_json_object(NULL);
-
-	ret = cmis_memory_map_init_pages(ctx, &map);
-	if (ret < 0)
-		return ret;
-	cmis_show_all_common(&map);
-
-	close_json_object();
-	delete_json_obj();
-
-	return 0;
-}

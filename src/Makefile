@@ -20,6 +20,15 @@ SRCS += sffcmis.c
 SRCS += sfpid.c
 SRCS += qsfp.c
 SRCS += cmis.c
+SRCS += cmis-ext.c
+SRCS += cmis-tunable.c
+SRCS += cmis-coherent.c
+SRCS += cmis-datapath.c
+SRCS += cmis-netpath.c
+SRCS += cmis-diag.c
+SRCS += cmis-vdm.c
+SRCS += cmis-eye.c
+SRCS += cmis-cdb.c
 SRCS += xfp.c
 
 OBJS        := $(SRCS:.c=.o)
