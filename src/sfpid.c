@@ -17,6 +17,7 @@
 #include "internal.h"
 #include "json_print.h"
 #include "sff-common.h"
+#include "sff-common-ext.h"
 #include "module-common.h"
 #include "i2c.h"
 #include "sffcmis.h"
@@ -58,7 +59,6 @@ static void sff8079_show_connector(const __u8 *id)
 static void sff8079_show_transceiver(const __u8 *id)
 {
 	static const char *pfx = "Transceiver type";
-	char value[140] = "";
 
 	if (is_json_context()) {
 		open_json_array("transceiver_codes", "");
@@ -80,236 +80,151 @@ static void sff8079_show_transceiver(const __u8 *id)
 	}
 	/* 10G Ethernet Compliance Codes */
 	if (id[3] & (1 << 7))
-		sprintf(value, "%s",
+		module_print_any_string(pfx,
 			"10G Ethernet: 10G Base-LRM [SFF-8472 rev10.4 onwards]");
 	if (id[3] & (1 << 6))
-		sprintf(value, "%s", "10G Ethernet: 10G Base-LRM");
+		module_print_any_string(pfx, "10G Ethernet: 10G Base-LRM");
 	if (id[3] & (1 << 5))
-		sprintf(value, "%s", "10G Ethernet: 10G Base-LR");
+		module_print_any_string(pfx, "10G Ethernet: 10G Base-LR");
 	if (id[3] & (1 << 4))
-		sprintf(value, "%s", "10G Ethernet: 10G Base-SR");
+		module_print_any_string(pfx, "10G Ethernet: 10G Base-SR");
 	/* Infiniband Compliance Codes */
 	if (id[3] & (1 << 3))
-		sprintf(value, "%s", "Infiniband: 1X SX");
+		module_print_any_string(pfx, "Infiniband: 1X SX");
 	if (id[3] & (1 << 2))
-		sprintf(value, "%s", "Infiniband: 1X LX");
+		module_print_any_string(pfx, "Infiniband: 1X LX");
 	if (id[3] & (1 << 1))
-		sprintf(value, "%s", "Infiniband: 1X Copper Active");
+		module_print_any_string(pfx, "Infiniband: 1X Copper Active");
 	if (id[3] & (1 << 0))
-		sprintf(value, "%s", "Infiniband: 1X Copper Passive");
+		module_print_any_string(pfx, "Infiniband: 1X Copper Passive");
 	/* ESCON Compliance Codes */
 	if (id[4] & (1 << 7))
-		sprintf(value, "%s", "ESCON: ESCON MMF, 1310nm LED");
+		module_print_any_string(pfx, "ESCON: ESCON MMF, 1310nm LED");
 	if (id[4] & (1 << 6))
-		sprintf(value, "%s", "ESCON: ESCON SMF, 1310nm Laser");
+		module_print_any_string(pfx, "ESCON: ESCON SMF, 1310nm Laser");
 	/* SONET Compliance Codes */
 	if (id[4] & (1 << 5))
-		sprintf(value, "%s", "SONET: OC-192, short reach");
+		module_print_any_string(pfx, "SONET: OC-192, short reach");
 	if (id[4] & (1 << 4))
-		sprintf(value, "%s", "SONET: SONET reach specifier bit 1");
+		module_print_any_string(pfx,
+					"SONET: SONET reach specifier bit 1");
 	if (id[4] & (1 << 3))
-		sprintf(value, "%s", "SONET: SONET reach specifier bit 2");
+		module_print_any_string(pfx,
+					"SONET: SONET reach specifier bit 2");
 	if (id[4] & (1 << 2))
-		sprintf(value, "%s", "SONET: OC-48, long reach");
+		module_print_any_string(pfx, "SONET: OC-48, long reach");
 	if (id[4] & (1 << 1))
-		sprintf(value, "%s", "SONET: OC-48, intermediate reach");
+		module_print_any_string(pfx,
+					"SONET: OC-48, intermediate reach");
 	if (id[4] & (1 << 0))
-		sprintf(value, "%s", "SONET: OC-48, short reach");
+		module_print_any_string(pfx, "SONET: OC-48, short reach");
 	if (id[5] & (1 << 6))
-		sprintf(value, "%s", "SONET: OC-12, single mode, long reach");
+		module_print_any_string(pfx,
+					"SONET: OC-12, single mode, long reach");
 	if (id[5] & (1 << 5))
-		sprintf(value, "%s", "SONET: OC-12, single mode, inter. reach");
+		module_print_any_string(pfx,
+					"SONET: OC-12, single mode, inter. reach");
 	if (id[5] & (1 << 4))
-		sprintf(value, "%s", "SONET: OC-12, short reach");
+		module_print_any_string(pfx, "SONET: OC-12, short reach");
 	if (id[5] & (1 << 2))
-		sprintf(value, "%s", "SONET: OC-3, single mode, long reach");
+		module_print_any_string(pfx,
+					"SONET: OC-3, single mode, long reach");
 	if (id[5] & (1 << 1))
-		sprintf(value, "%s", "SONET: OC-3, single mode, inter. reach");
+		module_print_any_string(pfx,
+					"SONET: OC-3, single mode, inter. reach");
 	if (id[5] & (1 << 0))
-		sprintf(value, "%s", "SONET: OC-3, short reach");
+		module_print_any_string(pfx, "SONET: OC-3, short reach");
 	/* Ethernet Compliance Codes */
 	if (id[6] & (1 << 7))
-		sprintf(value, "%s", "Ethernet: BASE-PX");
+		module_print_any_string(pfx, "Ethernet: BASE-PX");
 	if (id[6] & (1 << 6))
-		sprintf(value, "%s", "Ethernet: BASE-BX10");
+		module_print_any_string(pfx, "Ethernet: BASE-BX10");
 	if (id[6] & (1 << 5))
-		sprintf(value, "%s", "Ethernet: 100BASE-FX");
+		module_print_any_string(pfx, "Ethernet: 100BASE-FX");
 	if (id[6] & (1 << 4))
-		sprintf(value, "%s", "Ethernet: 100BASE-LX/LX10");
+		module_print_any_string(pfx, "Ethernet: 100BASE-LX/LX10");
 	if (id[6] & (1 << 3))
-		sprintf(value, "%s", "Ethernet: 1000BASE-T");
+		module_print_any_string(pfx, "Ethernet: 1000BASE-T");
 	if (id[6] & (1 << 2))
-		sprintf(value, "%s", "Ethernet: 1000BASE-CX");
+		module_print_any_string(pfx, "Ethernet: 1000BASE-CX");
 	if (id[6] & (1 << 1))
-		sprintf(value, "%s", "Ethernet: 1000BASE-LX");
+		module_print_any_string(pfx, "Ethernet: 1000BASE-LX");
 	if (id[6] & (1 << 0))
-		sprintf(value, "%s", "Ethernet: 1000BASE-SX");
+		module_print_any_string(pfx, "Ethernet: 1000BASE-SX");
 	/* Fibre Channel link length */
 	if (id[7] & (1 << 7))
-		sprintf(value, "%s", "FC: very long distance (V)");
+		module_print_any_string(pfx, "FC: very long distance (V)");
 	if (id[7] & (1 << 6))
-		sprintf(value, "%s", "FC: short distance (S)");
+		module_print_any_string(pfx, "FC: short distance (S)");
 	if (id[7] & (1 << 5))
-		sprintf(value, "%s", "FC: intermediate distance (I)");
+		module_print_any_string(pfx, "FC: intermediate distance (I)");
 	if (id[7] & (1 << 4))
-		sprintf(value, "%s", "FC: long distance (L)");
+		module_print_any_string(pfx, "FC: long distance (L)");
 	if (id[7] & (1 << 3))
-		sprintf(value, "%s", "FC: medium distance (M)");
+		module_print_any_string(pfx, "FC: medium distance (M)");
 	/* Fibre Channel transmitter technology */
 	if (id[7] & (1 << 2))
-		sprintf(value, "%s", "FC: Shortwave laser, linear Rx (SA)");
+		module_print_any_string(pfx,
+					"FC: Shortwave laser, linear Rx (SA)");
 	if (id[7] & (1 << 1))
-		sprintf(value, "%s", "FC: Longwave laser (LC)");
+		module_print_any_string(pfx, "FC: Longwave laser (LC)");
 	if (id[7] & (1 << 0))
-		sprintf(value, "%s", "FC: Electrical inter-enclosure (EL)");
+		module_print_any_string(pfx,
+					"FC: Electrical inter-enclosure (EL)");
 	if (id[8] & (1 << 7))
-		sprintf(value, "%s", "FC: Electrical intra-enclosure (EL)");
+		module_print_any_string(pfx,
+					"FC: Electrical intra-enclosure (EL)");
 	if (id[8] & (1 << 6))
-		sprintf(value, "%s", "FC: Shortwave laser w/o OFC (SN)");
+		module_print_any_string(pfx,
+					"FC: Shortwave laser w/o OFC (SN)");
 	if (id[8] & (1 << 5))
-		sprintf(value, "%s", "FC: Shortwave laser with OFC (SL)");
+		module_print_any_string(pfx,
+					"FC: Shortwave laser with OFC (SL)");
 	if (id[8] & (1 << 4))
-		sprintf(value, "%s", "FC: Longwave laser (LL)");
+		module_print_any_string(pfx, "FC: Longwave laser (LL)");
 	if (id[8] & (1 << 3))
-		sprintf(value, "%s", "Active Cable");
+		module_print_any_string(pfx, "Active Cable");
 	if (id[8] & (1 << 2))
-		sprintf(value, "%s", "Passive Cable");
+		module_print_any_string(pfx, "Passive Cable");
 	if (id[8] & (1 << 1))
-		sprintf(value, "%s", "FC: Copper FC-BaseT");
+		module_print_any_string(pfx, "FC: Copper FC-BaseT");
 	/* Fibre Channel transmission media */
 	if (id[9] & (1 << 7))
-		sprintf(value, "%s", "FC: Twin Axial Pair (TW)");
+		module_print_any_string(pfx, "FC: Twin Axial Pair (TW)");
 	if (id[9] & (1 << 6))
-		sprintf(value, "%s", "FC: Twisted Pair (TP)");
+		module_print_any_string(pfx, "FC: Twisted Pair (TP)");
 	if (id[9] & (1 << 5))
-		sprintf(value, "%s", "FC: Miniature Coax (MI)");
+		module_print_any_string(pfx, "FC: Miniature Coax (MI)");
 	if (id[9] & (1 << 4))
-		sprintf(value, "%s", "FC: Video Coax (TV)");
+		module_print_any_string(pfx, "FC: Video Coax (TV)");
 	if (id[9] & (1 << 3))
-		sprintf(value, "%s", "FC: Multimode, 62.5um (M6)");
+		module_print_any_string(pfx, "FC: Multimode, 62.5um (M6)");
 	if (id[9] & (1 << 2))
-		sprintf(value, "%s", "FC: Multimode, 50um (M5)");
+		module_print_any_string(pfx, "FC: Multimode, 50um (M5)");
 	if (id[9] & (1 << 0))
-		sprintf(value, "%s", "FC: Single Mode (SM)");
+		module_print_any_string(pfx, "FC: Single Mode (SM)");
 	/* Fibre Channel speed */
 	if (id[10] & (1 << 7))
-		sprintf(value, "%s", "FC: 1200 MBytes/sec");
+		module_print_any_string(pfx, "FC: 1200 MBytes/sec");
 	if (id[10] & (1 << 6))
-		sprintf(value, "%s", "FC: 800 MBytes/sec");
+		module_print_any_string(pfx, "FC: 800 MBytes/sec");
 	if (id[10] & (1 << 4))
-		sprintf(value, "%s", "FC: 400 MBytes/sec");
+		module_print_any_string(pfx, "FC: 400 MBytes/sec");
 	if (id[10] & (1 << 2))
-		sprintf(value, "%s", "FC: 200 MBytes/sec");
+		module_print_any_string(pfx, "FC: 200 MBytes/sec");
 	if (id[10] & (1 << 0))
-		sprintf(value, "%s", "FC: 100 MBytes/sec");
+		module_print_any_string(pfx, "FC: 100 MBytes/sec");
 	/* Extended Specification Compliance Codes from SFF-8024 */
-	if (id[36] == 0x1)
-		sprintf(value, "%s",
-			"Extended: 100G AOC or 25GAUI C2M AOC with worst BER of 5x10^(-5)");
-	if (id[36] == 0x2)
-		sprintf(value, "%s", "Extended: 100G Base-SR4 or 25GBase-SR");
-	if (id[36] == 0x3)
-		sprintf(value, "%s", "Extended: 100G Base-LR4 or 25GBase-LR");
-	if (id[36] == 0x4)
-		sprintf(value, "%s", "Extended: 100G Base-ER4 or 25GBase-ER");
-	if (id[36] == 0x8)
-		sprintf(value, "%s",
-			"Extended: 100G ACC or 25GAUI C2M ACC with worst BER of 5x10^(-5)");
-	if (id[36] == 0xb)
-		sprintf(value, "%s",
-			"Extended: 100G Base-CR4 or 25G Base-CR CA-L");
-	if (id[36] == 0xc)
-		sprintf(value, "%s", "Extended: 25G Base-CR CA-S");
-	if (id[36] == 0xd)
-		sprintf(value, "%s", "Extended: 25G Base-CR CA-N");
-	if (id[36] == 0x16)
-		sprintf(value, "%s",
-			"Extended: 10Gbase-T with SFI electrical interface");
-	if (id[36] == 0x18)
-		sprintf(value, "%s",
-			"Extended: 100G AOC or 25GAUI C2M AOC with worst BER of 10^(-12)");
-	if (id[36] == 0x19)
-		sprintf(value, "%s",
-			"Extended: 100G ACC or 25GAUI C2M ACC with worst BER of 10^(-12)");
-	if (id[36] == 0x1a)
-		sprintf(value, "%s",
-			"Extended: 100GE-DWDM2 (DWDM transceiver using 2 wavelengths on a 1550 nm DWDM grid with a reach up to 80 km)");
-	if (id[36] == 0x1b)
-		sprintf(value, "%s",
-			"Extended: 100G 1550nm WDM (4 wavelengths)");
-	if (id[36] == 0x1c)
-		sprintf(value, "%s", "Extended: 10Gbase-T Short Reach");
-	if (id[36] == 0x1d)
-		sprintf(value, "%s", "Extended: 5GBASE-T");
-	if (id[36] == 0x1e)
-		sprintf(value, "%s", "Extended: 2.5GBASE-T");
-	if (id[36] == 0x1f)
-		sprintf(value, "%s", "Extended: 40G SWDM4");
-	if (id[36] == 0x20)
-		sprintf(value, "%s", "Extended: 100G SWDM4");
-	if (id[36] == 0x21)
-		sprintf(value, "%s", "Extended: 100G PAM4 BiDi");
-	if (id[36] == 0x22)
-		sprintf(value, "%s",
-			"Extended: 4WDM-10 MSA (10km version of 100G CWDM4 with same RS(528,514) FEC in host system)");
-	if (id[36] == 0x23)
-		sprintf(value, "%s",
-			"Extended: 4WDM-20 MSA (20km version of 100GBASE-LR4 with RS(528,514) FEC in host system)");
-	if (id[36] == 0x24)
-		sprintf(value, "%s",
-			"Extended: 4WDM-40 MSA (40km reach with APD receiver and RS(528,514) FEC in host system)");
-	if (id[36] == 0x25)
-		sprintf(value, "%s",
-			"Extended: 100GBASE-DR (clause 140), CAUI-4 (no FEC)");
-	if (id[36] == 0x26)
-		sprintf(value, "%s",
-			"Extended: 100G-FR or 100GBASE-FR1 (clause 140), CAUI-4 (no FEC)");
-	if (id[36] == 0x27)
-		sprintf(value, "%s",
-			"Extended: 100G-LR or 100GBASE-LR1 (clause 140), CAUI-4 (no FEC)");
-	if (id[36] == 0x30)
-		sprintf(value, "%s",
-			"Extended: Active Copper Cable with 50GAUI, 100GAUI-2 or 200GAUI-4 C2M. Providing a worst BER of 10-6 or below");
-	if (id[36] == 0x31)
-		sprintf(value, "%s",
-			"Extended: Active Optical Cable with 50GAUI, 100GAUI-2 or 200GAUI-4 C2M. Providing a worst BER of 10-6 or below");
-	if (id[36] == 0x32)
-		sprintf(value, "%s",
-			"Extended: Active Copper Cable with 50GAUI, 100GAUI-2 or 200GAUI-4 C2M. Providing a worst BER of 2.6x10-4 for ACC, 10-5 for AUI, or below");
-	if (id[36] == 0x33)
-		sprintf(value, "%s",
-			"Extended: Active Optical Cable with 50GAUI, 100GAUI-2 or 200GAUI-4 C2M. Providing a worst BER of 2.6x10-4 for ACC, 10-5 for AUI, or below");
-	if (id[36] == 0x40)
-		sprintf(value, "%s",
-			"Extended: 50GBASE-CR, 100GBASE-CR2, or 200GBASE-CR4");
-	if (id[36] == 0x41)
-		sprintf(value, "%s",
-			"Extended: 50GBASE-SR, 100GBASE-SR2, or 200GBASE-SR4");
-	if (id[36] == 0x42)
-		sprintf(value, "%s", "Extended: 50GBASE-FR or 200GBASE-DR4");
-	if (id[36] == 0x43)
-		sprintf(value, "%s", "Extended: 200GBASE-FR4");
-	if (id[36] == 0x44)
-		sprintf(value, "%s", "Extended: 200G 1550 nm PSM4");
-	if (id[36] == 0x45)
-		sprintf(value, "%s", "Extended: 50GBASE-LR");
-	if (id[36] == 0x46)
-		sprintf(value, "%s", "Extended: 200GBASE-LR4");
-	if (id[36] == 0x50)
-		sprintf(value, "%s", "Extended: 64GFC EA");
-	if (id[36] == 0x51)
-		sprintf(value, "%s", "Extended: 64GFC SW");
-	if (id[36] == 0x52)
-		sprintf(value, "%s", "Extended: 64GFC LW");
-	if (id[36] == 0x53)
-		sprintf(value, "%s", "Extended: 128GFC EA");
-	if (id[36] == 0x54)
-		sprintf(value, "%s", "Extended: 128GFC SW");
-	if (id[36] == 0x55)
-		sprintf(value, "%s", "Extended: 128GFC LW");
+	{
+		const char *ext = sff8024_ext_spec_compliance_name(id[36]);
 
-	if (value[0] != '\0')
-		module_print_any_string(pfx, value);
+		if (ext) {
+			char value[140];
+
+			snprintf(value, sizeof(value), "Extended: %s", ext);
+			module_print_any_string(pfx, value);
+		}
+	}
 }
 
 static void sff8079_show_encoding(const __u8 *id)
@@ -482,7 +397,7 @@ static void sff8079_show_all_common(const __u8 *id)
 		module_print_any_uint("BR margin max", br_max, "%");
 		module_print_any_uint("BR margin min", br_min, "%");
 		module_show_ascii(id, 68, 83, "Vendor SN");
-		module_show_ascii(id, 84, 91, "Date code");
+		module_show_date_code(id, 84);
 	}
 }
 

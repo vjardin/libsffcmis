@@ -64,8 +64,10 @@
 #include "internal.h"
 #include "json_print.h"
 #include "sff-common.h"
+#include "sff-common-ext.h"
 #include "module-common.h"
 #include "qsfp.h"
+#include "qsfp-ext.h"
 #include "i2c.h"
 #include "sffcmis.h"
 #include "cmis.h"
@@ -185,10 +187,20 @@ static void sff8636_show_connector(const struct sff8636_memory_map *map)
 	module_show_connector(map->page_00h, SFF8636_CTOR_OFFSET);
 }
 
+static const char *sff8636_ext_compliance_desc(__u8 code)
+{
+	const char *name = sff8024_ext_spec_compliance_name(code);
+
+	if (name)
+		return name;
+	if (code == 0x00)
+		return "Unspecified";
+	return "Reserved";
+}
+
 static void sff8636_show_transceiver(const struct sff8636_memory_map *map)
 {
 	static const char *pfx = "Transceiver type";
-	char value[140] = "";
 
 	if (is_json_context()) {
 		open_json_array("transceiver_codes", "");
@@ -209,339 +221,167 @@ static void sff8636_show_transceiver(const struct sff8636_memory_map *map)
 		print_uint(PRINT_JSON, NULL, "%u",
 			   map->page_00h[SFF8636_FC_SPEED_OFFSET]);
 		close_json_array("");
-	} else {
-		printf("\t%-41s : 0x%02x 0x%02x 0x%02x " \
-		       "0x%02x 0x%02x 0x%02x 0x%02x 0x%02x\n",
-		       "Transceiver codes",
-		       map->page_00h[SFF8636_ETHERNET_COMP_OFFSET],
-		       map->page_00h[SFF8636_SONET_COMP_OFFSET],
-		       map->page_00h[SFF8636_SAS_COMP_OFFSET],
-		       map->page_00h[SFF8636_GIGE_COMP_OFFSET],
-		       map->page_00h[SFF8636_FC_LEN_OFFSET],
-		       map->page_00h[SFF8636_FC_TECH_OFFSET],
-		       map->page_00h[SFF8636_FC_TRANS_MEDIA_OFFSET],
-		       map->page_00h[SFF8636_FC_SPEED_OFFSET]);
 	}
 
 	/* 10G/40G Ethernet Compliance Codes */
 	if (map->page_00h[SFF8636_ETHERNET_COMP_OFFSET] &
 	    SFF8636_ETHERNET_10G_LRM)
-		sprintf(value, "%s", "10G Ethernet: 10G Base-LRM");
+		module_print_any_string(pfx, "10G Ethernet: 10G Base-LRM");
 	if (map->page_00h[SFF8636_ETHERNET_COMP_OFFSET] &
 	    SFF8636_ETHERNET_10G_LR)
-		sprintf(value, "%s", "10G Ethernet: 10G Base-LR");
+		module_print_any_string(pfx, "10G Ethernet: 10G Base-LR");
 	if (map->page_00h[SFF8636_ETHERNET_COMP_OFFSET] &
 	    SFF8636_ETHERNET_10G_SR)
-		sprintf(value, "%s", "10G Ethernet: 10G Base-SR");
+		module_print_any_string(pfx, "10G Ethernet: 10G Base-SR");
 	if (map->page_00h[SFF8636_ETHERNET_COMP_OFFSET] &
 	    SFF8636_ETHERNET_40G_CR4)
-		sprintf(value, "%s", "40G Ethernet: 40G Base-CR4");
+		module_print_any_string(pfx, "40G Ethernet: 40G Base-CR4");
 	if (map->page_00h[SFF8636_ETHERNET_COMP_OFFSET] &
 	    SFF8636_ETHERNET_40G_SR4)
-		sprintf(value, "%s", "40G Ethernet: 40G Base-SR4");
+		module_print_any_string(pfx, "40G Ethernet: 40G Base-SR4");
 	if (map->page_00h[SFF8636_ETHERNET_COMP_OFFSET] &
 	    SFF8636_ETHERNET_40G_LR4)
-		sprintf(value, "%s", "40G Ethernet: 40G Base-LR4");
+		module_print_any_string(pfx, "40G Ethernet: 40G Base-LR4");
 	if (map->page_00h[SFF8636_ETHERNET_COMP_OFFSET] &
 	    SFF8636_ETHERNET_40G_ACTIVE)
-		sprintf(value, "%s", "40G Ethernet: 40G Active Cable (XLPPI)");
+		module_print_any_string(pfx,
+					"40G Ethernet: 40G Active Cable (XLPPI)");
 	/* Extended Specification Compliance Codes from SFF-8024 */
 	if (map->page_00h[SFF8636_ETHERNET_COMP_OFFSET] &
 	    SFF8636_ETHERNET_RSRVD) {
-		switch (map->page_00h[SFF8636_OPTION_1_OFFSET]) {
-		case SFF8636_ETHERNET_UNSPECIFIED:
-			sprintf(value, "%s", "(reserved or unknown)");
-			break;
-		case SFF8636_ETHERNET_100G_AOC:
-			sprintf(value, "%s",
-				"100G Ethernet: 100G AOC or 25GAUI C2M AOC with worst BER of 5x10^(-5)");
-			break;
-		case SFF8636_ETHERNET_100G_SR4:
-			sprintf(value, "%s",
-				"100G Ethernet: 100G Base-SR4 or 25GBase-SR");
-			break;
-		case SFF8636_ETHERNET_100G_LR4:
-			sprintf(value, "%s", "100G Ethernet: 100G Base-LR4");
-			break;
-		case SFF8636_ETHERNET_100G_ER4:
-			sprintf(value, "%s", "100G Ethernet: 100G Base-ER4");
-			break;
-		case SFF8636_ETHERNET_100G_SR10:
-			sprintf(value, "%s", "100G Ethernet: 100G Base-SR10");
-			break;
-		case SFF8636_ETHERNET_100G_CWDM4_FEC:
-			sprintf(value, "%s",
-				"100G Ethernet: 100G CWDM4 MSA with FEC");
-			break;
-		case SFF8636_ETHERNET_100G_PSM4:
-			sprintf(value, "%s",
-				"100G Ethernet: 100G PSM4 Parallel SMF");
-			break;
-		case SFF8636_ETHERNET_100G_ACC:
-			sprintf(value, "%s",
-				"100G Ethernet: 100G ACC or 25GAUI C2M ACC with worst BER of 5x10^(-5)");
-			break;
-		case SFF8636_ETHERNET_100G_CWDM4_NO_FEC:
-			sprintf(value, "%s",
-				"100G Ethernet: 100G CWDM4 MSA without FEC");
-			break;
-		case SFF8636_ETHERNET_100G_RSVD1:
-			sprintf(value, "%s", "(reserved or unknown)");
-			break;
-		case SFF8636_ETHERNET_100G_CR4:
-			sprintf(value, "%s",
-				"100G Ethernet: 100G Base-CR4 or 25G Base-CR CA-L");
-			break;
-		case SFF8636_ETHERNET_25G_CR_CA_S:
-			sprintf(value, "%s", "25G Ethernet: 25G Base-CR CA-S");
-			break;
-		case SFF8636_ETHERNET_25G_CR_CA_N:
-			sprintf(value, "%s", "25G Ethernet: 25G Base-CR CA-N");
-			break;
-		case SFF8636_ETHERNET_40G_ER4:
-			sprintf(value, "%s", "40G Ethernet: 40G Base-ER4");
-			break;
-		case SFF8636_ETHERNET_4X10_SR:
-			sprintf(value, "%s", "4x10G Ethernet: 10G Base-SR");
-			break;
-		case SFF8636_ETHERNET_40G_PSM4:
-			sprintf(value, "%s",
-				"40G Ethernet: 40G PSM4 Parallel SMF");
-			break;
-		case SFF8636_ETHERNET_G959_P1I1_2D1:
-			sprintf(value, "%s",
-				"Ethernet: G959.1 profile P1I1-2D1 (10709 MBd, 2km, 1310nm SM)");
-			break;
-		case SFF8636_ETHERNET_G959_P1S1_2D2:
-			sprintf(value, "%s",
-				"Ethernet: G959.1 profile P1S1-2D2 (10709 MBd, 40km, 1550nm SM)");
-			break;
-		case SFF8636_ETHERNET_G959_P1L1_2D2:
-			sprintf(value, "%s",
-				"Ethernet: G959.1 profile P1L1-2D2 (10709 MBd, 80km, 1550nm SM)");
-			break;
-		case SFF8636_ETHERNET_10GT_SFI:
-			sprintf(value, "%s",
-				"10G Ethernet: 10G Base-T with SFI electrical interface");
-			break;
-		case SFF8636_ETHERNET_100G_CLR4:
-			sprintf(value, "%s", "100G Ethernet: 100G CLR4");
-			break;
-		case SFF8636_ETHERNET_100G_AOC2:
-			sprintf(value, "%s",
-				"100G Ethernet: 100G AOC or 25GAUI C2M AOC with worst BER of 10^(-12)");
-			break;
-		case SFF8636_ETHERNET_100G_ACC2:
-			sprintf(value, "%s",
-				"100G Ethernet: 100G ACC or 25GAUI C2M ACC with worst BER of 10^(-12)");
-			break;
-		case SFF8636_ETHERNET_100GE_DWDM2:
-			sprintf(value, "%s",
-				"100GE-DWDM2 (DWDM transceiver using 2 wavelengths on a 1550 nm DWDM grid with a reach up to 80 km)");
-			break;
-		case SFF8636_ETHERNET_100G_1550NM_WDM:
-			sprintf(value, "%s", "100G 1550nm WDM (4 wavelengths)");
-			break;
-		case SFF8636_ETHERNET_10G_BASET_SR:
-			sprintf(value, "%s",
-				"10GBASE-T Short Reach (30 meters)");
-			break;
-		case SFF8636_ETHERNET_5G_BASET:
-			sprintf(value, "%s", "5GBASE-T");
-			break;
-		case SFF8636_ETHERNET_2HALFG_BASET:
-			sprintf(value, "%s", "2.5GBASE-T");
-			break;
-		case SFF8636_ETHERNET_40G_SWDM4:
-			sprintf(value, "%s", "40G SWDM4");
-			break;
-		case SFF8636_ETHERNET_100G_SWDM4:
-			sprintf(value, "%s", "100G SWDM4");
-			break;
-		case SFF8636_ETHERNET_100G_PAM4_BIDI:
-			sprintf(value, "%s", "100G PAM4 BiDi");
-			break;
-		case SFF8636_ETHERNET_4WDM10_MSA:
-			sprintf(value, "%s",
-				"4WDM-10 MSA (10km version of 100G CWDM4 with same RS(528,514) FEC in host system)");
-			break;
-		case SFF8636_ETHERNET_4WDM20_MSA:
-			sprintf(value, "%s", "4WDM-20 MSA (20km version of 100GBASE-LR4 with RS(528,514) FEC in host system)");
-			break;
-		case SFF8636_ETHERNET_4WDM40_MSA:
-			sprintf(value, "%s",
-				"4WDM-40 MSA (40km reach with APD receiver and RS(528,514) FEC in host system)");
-			break;
-		case SFF8636_ETHERNET_100G_DR:
-			sprintf(value, "%s",
-				"100GBASE-DR (clause 140), CAUI-4 (no FEC)");
-			break;
-		case SFF8636_ETHERNET_100G_FR_NOFEC:
-			sprintf(value, "%s",
-				"100G-FR or 100GBASE-FR1 (clause 140), CAUI-4 (no FEC)");
-			break;
-		case SFF8636_ETHERNET_100G_LR_NOFEC:
-			sprintf(value, "%s",
-				"100G-LR or 100GBASE-LR1 (clause 140), CAUI-4 (no FEC)");
-			break;
-		case SFF8636_ETHERNET_200G_ACC1:
-			sprintf(value, "%s",
-				"Active Copper Cable with 50GAUI, 100GAUI-2 or 200GAUI-4 C2M. Providing a worst BER of 10-6 or below");
-			break;
-		case SFF8636_ETHERNET_200G_AOC1:
-			sprintf(value, "%s",
-				"Active Optical Cable with 50GAUI, 100GAUI-2 or 200GAUI-4 C2M. Providing a worst BER of 10-6 or below");
-			break;
-		case SFF8636_ETHERNET_200G_ACC2:
-			sprintf(value, "%s",
-				"Active Copper Cable with 50GAUI, 100GAUI-2 or 200GAUI-4 C2M. Providing a worst BER of 2.6x10-4 for ACC, 10-5 for AUI, or below");
-			break;
-		case SFF8636_ETHERNET_200G_A0C2:
-			sprintf(value, "%s",
-				"Active Optical Cable with 50GAUI, 100GAUI-2 or 200GAUI-4 C2M. Providing a worst BER of 2.6x10-4 for ACC, 10-5 for AUI, or below");
-			break;
-		case SFF8636_ETHERNET_200G_CR4:
-			sprintf(value, "%s",
-				"50GBASE-CR, 100GBASE-CR2, or 200GBASE-CR4");
-			break;
-		case SFF8636_ETHERNET_200G_SR4:
-			sprintf(value, "%s",
-				"50GBASE-SR, 100GBASE-SR2, or 200GBASE-SR4");
-			break;
-		case SFF8636_ETHERNET_200G_DR4:
-			sprintf(value, "%s", "50GBASE-FR or 200GBASE-DR4");
-			break;
-		case SFF8636_ETHERNET_200G_FR4:
-			sprintf(value, "%s", "200GBASE-FR4");
-			break;
-		case SFF8636_ETHERNET_200G_PSM4:
-			sprintf(value, "%s", "200G 1550 nm PSM4");
-			break;
-		case SFF8636_ETHERNET_50G_LR:
-			sprintf(value, "%s", "50GBASE-LR");
-			break;
-		case SFF8636_ETHERNET_200G_LR4:
-			sprintf(value, "%s", "200GBASE-LR4");
-			break;
-		case SFF8636_ETHERNET_64G_EA:
-			sprintf(value, "%s", "64GFC EA");
-			break;
-		case SFF8636_ETHERNET_64G_SW:
-			sprintf(value, "%s", "64GFC SW");
-			break;
-		case SFF8636_ETHERNET_64G_LW:
-			sprintf(value, "%s", "64GFC LW");
-			break;
-		case SFF8636_ETHERNET_128FC_EA:
-			sprintf(value, "%s", "128GFC EA");
-			break;
-		case SFF8636_ETHERNET_128FC_SW:
-			sprintf(value, "%s", "128GFC SW");
-			break;
-		case SFF8636_ETHERNET_128FC_LW:
-			sprintf(value, "%s", "128GFC LW");
-			break;
-		default:
-			sprintf(value, "%s", "(reserved or unknown)");
-			break;
-		}
+		__u8 ext_code = map->page_00h[SFF8636_OPTION_1_OFFSET];
+
+		sff_print_any_hex_field("Extended compliance",
+					"extended_compliance", ext_code,
+					sff8636_ext_compliance_desc(ext_code));
 	}
 
 	/* SONET Compliance Codes */
 	if (map->page_00h[SFF8636_SONET_COMP_OFFSET] &
-	    (SFF8636_SONET_40G_OTN))
-		sprintf(value, "%s", "40G OTN (OTU3B/OTU3C)");
-	if (map->page_00h[SFF8636_SONET_COMP_OFFSET] & (SFF8636_SONET_OC48_LR))
-		sprintf(value, "%s", "SONET: OC-48, long reach");
-	if (map->page_00h[SFF8636_SONET_COMP_OFFSET] & (SFF8636_SONET_OC48_IR))
-		sprintf(value, "%s", "SONET: OC-48, intermediate reach");
-	if (map->page_00h[SFF8636_SONET_COMP_OFFSET] & (SFF8636_SONET_OC48_SR))
-		sprintf(value, "%s", "SONET: OC-48, short reach");
+	    SFF8636_SONET_40G_OTN)
+		module_print_any_string(pfx, "40G OTN (OTU3B/OTU3C)");
+	if (map->page_00h[SFF8636_SONET_COMP_OFFSET] & SFF8636_SONET_OC48_LR)
+		module_print_any_string(pfx, "SONET: OC-48, long reach");
+	if (map->page_00h[SFF8636_SONET_COMP_OFFSET] & SFF8636_SONET_OC48_IR)
+		module_print_any_string(pfx, "SONET: OC-48, intermediate reach");
+	if (map->page_00h[SFF8636_SONET_COMP_OFFSET] & SFF8636_SONET_OC48_SR)
+		module_print_any_string(pfx, "SONET: OC-48, short reach");
 
 	/* SAS/SATA Compliance Codes */
-	if (map->page_00h[SFF8636_SAS_COMP_OFFSET] & (SFF8636_SAS_6G))
-		sprintf(value, "%s", "SAS 6.0G");
-	if (map->page_00h[SFF8636_SAS_COMP_OFFSET] & (SFF8636_SAS_3G))
-		sprintf(value, "%s", "SAS 3.0G");
+	if (map->page_00h[SFF8636_SAS_COMP_OFFSET] & SFF8636_SAS_24G)
+		module_print_any_string(pfx, "SAS 24.0G");
+	if (map->page_00h[SFF8636_SAS_COMP_OFFSET] & SFF8636_SAS_12G)
+		module_print_any_string(pfx, "SAS 12.0G");
+	if (map->page_00h[SFF8636_SAS_COMP_OFFSET] & SFF8636_SAS_6G)
+		module_print_any_string(pfx, "SAS 6.0G");
+	if (map->page_00h[SFF8636_SAS_COMP_OFFSET] & SFF8636_SAS_3G)
+		module_print_any_string(pfx, "SAS 3.0G");
 
 	/* Ethernet Compliance Codes */
 	if (map->page_00h[SFF8636_GIGE_COMP_OFFSET] & SFF8636_GIGE_1000_BASE_T)
-		sprintf(value, "%s", "Ethernet: 1000BASE-T");
+		module_print_any_string(pfx, "Ethernet: 1000BASE-T");
 	if (map->page_00h[SFF8636_GIGE_COMP_OFFSET] & SFF8636_GIGE_1000_BASE_CX)
-		sprintf(value, "%s", "Ethernet: 1000BASE-CX");
+		module_print_any_string(pfx, "Ethernet: 1000BASE-CX");
 	if (map->page_00h[SFF8636_GIGE_COMP_OFFSET] & SFF8636_GIGE_1000_BASE_LX)
-		sprintf(value, "%s", "Ethernet: 1000BASE-LX");
+		module_print_any_string(pfx, "Ethernet: 1000BASE-LX");
 	if (map->page_00h[SFF8636_GIGE_COMP_OFFSET] & SFF8636_GIGE_1000_BASE_SX)
-		sprintf(value, "%s", "Ethernet: 1000BASE-SX");
+		module_print_any_string(pfx, "Ethernet: 1000BASE-SX");
 
 	/* Fibre Channel link length */
 	if (map->page_00h[SFF8636_FC_LEN_OFFSET] & SFF8636_FC_LEN_VERY_LONG)
-		sprintf(value, "%s", "FC: very long distance (V)");
+		module_print_any_string(pfx, "FC: very long distance (V)");
 	if (map->page_00h[SFF8636_FC_LEN_OFFSET] & SFF8636_FC_LEN_SHORT)
-		sprintf(value, "%s", "FC: short distance (S)");
+		module_print_any_string(pfx, "FC: short distance (S)");
 	if (map->page_00h[SFF8636_FC_LEN_OFFSET] & SFF8636_FC_LEN_INT)
-		sprintf(value, "%s", "FC: intermediate distance (I)");
+		module_print_any_string(pfx, "FC: intermediate distance (I)");
 	if (map->page_00h[SFF8636_FC_LEN_OFFSET] & SFF8636_FC_LEN_LONG)
-		sprintf(value, "%s", "FC: long distance (L)");
+		module_print_any_string(pfx, "FC: long distance (L)");
 	if (map->page_00h[SFF8636_FC_LEN_OFFSET] & SFF8636_FC_LEN_MED)
-		sprintf(value, "%s", "FC: medium distance (M)");
+		module_print_any_string(pfx, "FC: medium distance (M)");
 
 	/* Fibre Channel transmitter technology */
 	if (map->page_00h[SFF8636_FC_LEN_OFFSET] & SFF8636_FC_TECH_LONG_LC)
-		sprintf(value, "%s", "FC: Longwave laser (LC)");
+		module_print_any_string(pfx, "FC: Longwave laser (LC)");
 	if (map->page_00h[SFF8636_FC_LEN_OFFSET] & SFF8636_FC_TECH_ELEC_INTER)
-		sprintf(value, "%s", "FC: Electrical inter-enclosure (EL)");
+		module_print_any_string(pfx,
+					"FC: Electrical inter-enclosure (EL)");
 	if (map->page_00h[SFF8636_FC_TECH_OFFSET] & SFF8636_FC_TECH_ELEC_INTRA)
-		sprintf(value, "%s", "FC: Electrical intra-enclosure (EL)");
+		module_print_any_string(pfx,
+					"FC: Electrical intra-enclosure (EL)");
 	if (map->page_00h[SFF8636_FC_TECH_OFFSET] &
 	    SFF8636_FC_TECH_SHORT_WO_OFC)
-		sprintf(value, "%s", "FC: Shortwave laser w/o OFC (SN)");
+		module_print_any_string(pfx,
+					"FC: Shortwave laser w/o OFC (SN)");
 	if (map->page_00h[SFF8636_FC_TECH_OFFSET] & SFF8636_FC_TECH_SHORT_W_OFC)
-		sprintf(value, "%s", "FC: Shortwave laser with OFC (SL)");
+		module_print_any_string(pfx,
+					"FC: Shortwave laser with OFC (SL)");
 	if (map->page_00h[SFF8636_FC_TECH_OFFSET] & SFF8636_FC_TECH_LONG_LL)
-		sprintf(value, "%s", "FC: Longwave laser (LL)");
+		module_print_any_string(pfx, "FC: Longwave laser (LL)");
 
 	/* Fibre Channel transmission media */
 	if (map->page_00h[SFF8636_FC_TRANS_MEDIA_OFFSET] &
 	    SFF8636_FC_TRANS_MEDIA_TW)
-		sprintf(value, "%s", "FC: Twin Axial Pair (TW)");
+		module_print_any_string(pfx, "FC: Twin Axial Pair (TW)");
 	if (map->page_00h[SFF8636_FC_TRANS_MEDIA_OFFSET] &
 	    SFF8636_FC_TRANS_MEDIA_TP)
-		sprintf(value, "%s", "FC: Twisted Pair (TP)");
+		module_print_any_string(pfx, "FC: Twisted Pair (TP)");
 	if (map->page_00h[SFF8636_FC_TRANS_MEDIA_OFFSET] &
 	    SFF8636_FC_TRANS_MEDIA_MI)
-		sprintf(value, "%s", "FC: Miniature Coax (MI)");
+		module_print_any_string(pfx, "FC: Miniature Coax (MI)");
 	if (map->page_00h[SFF8636_FC_TRANS_MEDIA_OFFSET] &
 	    SFF8636_FC_TRANS_MEDIA_TV)
-		sprintf(value, "%s", "FC: Video Coax (TV)");
+		module_print_any_string(pfx, "FC: Video Coax (TV)");
 	if (map->page_00h[SFF8636_FC_TRANS_MEDIA_OFFSET] &
 	    SFF8636_FC_TRANS_MEDIA_M6)
-		sprintf(value, "%s", "FC: Multimode, 62.5m (M6)");
+		module_print_any_string(pfx, "FC: Multimode, 62.5m (M6)");
 	if (map->page_00h[SFF8636_FC_TRANS_MEDIA_OFFSET] &
 	    SFF8636_FC_TRANS_MEDIA_M5)
-		sprintf(value, "%s", "FC: Multimode, 50m (M5)");
+		module_print_any_string(pfx, "FC: Multimode, 50m (M5)");
 	if (map->page_00h[SFF8636_FC_TRANS_MEDIA_OFFSET] &
 	    SFF8636_FC_TRANS_MEDIA_OM3)
-		sprintf(value, "%s", "FC: Multimode, 50um (OM3)");
+		module_print_any_string(pfx, "FC: Multimode, 50um (OM3)");
 	if (map->page_00h[SFF8636_FC_TRANS_MEDIA_OFFSET] &
 	    SFF8636_FC_TRANS_MEDIA_SM)
-		sprintf(value, "%s", "FC: Single Mode (SM)");
+		module_print_any_string(pfx, "FC: Single Mode (SM)");
 
 	/* Fibre Channel speed */
 	if (map->page_00h[SFF8636_FC_SPEED_OFFSET] & SFF8636_FC_SPEED_1200_MBPS)
-		sprintf(value, "%s", "FC: 1200 MBytes/sec");
+		module_print_any_string(pfx, "FC: 1200 MBytes/sec");
 	if (map->page_00h[SFF8636_FC_SPEED_OFFSET] & SFF8636_FC_SPEED_800_MBPS)
-		sprintf(value, "%s", "FC: 800 MBytes/sec");
+		module_print_any_string(pfx, "FC: 800 MBytes/sec");
 	if (map->page_00h[SFF8636_FC_SPEED_OFFSET] & SFF8636_FC_SPEED_1600_MBPS)
-		sprintf(value, "%s", "FC: 1600 MBytes/sec");
+		module_print_any_string(pfx, "FC: 1600 MBytes/sec");
 	if (map->page_00h[SFF8636_FC_SPEED_OFFSET] & SFF8636_FC_SPEED_400_MBPS)
-		sprintf(value, "%s", "FC: 400 MBytes/sec");
+		module_print_any_string(pfx, "FC: 400 MBytes/sec");
+	if (map->page_00h[SFF8636_FC_SPEED_OFFSET] & SFF8636_FC_SPEED_3200_MBPS)
+		module_print_any_string(pfx, "FC: 3200 MBytes/sec");
 	if (map->page_00h[SFF8636_FC_SPEED_OFFSET] & SFF8636_FC_SPEED_200_MBPS)
-		sprintf(value, "%s", "FC: 200 MBytes/sec");
-	if (map->page_00h[SFF8636_FC_SPEED_OFFSET] & SFF8636_FC_SPEED_100_MBPS)
-		sprintf(value, "%s", "FC: 100 MBytes/sec");
+		module_print_any_string(pfx, "FC: 200 MBytes/sec");
+	if (map->page_00h[SFF8636_FC_SPEED_OFFSET] & SFF8636_FC_SPEED_EXTENDED) {
+		/* Only show if not already displayed from byte 131 bit 7 */
+		if (!(map->page_00h[SFF8636_ETHERNET_COMP_OFFSET] &
+		      SFF8636_ETHERNET_RSRVD)) {
+			__u8 ext_code =
+				map->page_00h[SFF8636_OPTION_1_OFFSET];
 
-	module_print_any_string(pfx, value);
+			sff_print_any_hex_field("Extended compliance",
+						"extended_compliance",
+						ext_code,
+						sff8636_ext_compliance_desc(
+							ext_code));
+		}
+	}
+	if (map->page_00h[SFF8636_FC_SPEED_OFFSET] & SFF8636_FC_SPEED_100_MBPS)
+		module_print_any_string(pfx, "FC: 100 MBytes/sec");
+
+	/* Secondary Extended Specification Compliance (byte 116) */
+	if (map->page_00h[SFF8636_SEC_EXT_COMP_OFFSET]) {
+		__u8 sec_code = map->page_00h[SFF8636_SEC_EXT_COMP_OFFSET];
+
+		sff_print_any_hex_field("Secondary ext. compliance",
+					"secondary_ext_compliance", sec_code,
+					sff8636_ext_compliance_desc(sec_code));
+	}
 }
 
 static void sff8636_show_encoding(const struct sff8636_memory_map *map)
@@ -565,7 +405,23 @@ sff8636_show_wavelength_or_copper_compliance(const struct sff8636_memory_map *ma
 	u16 value = map->page_00h[SFF8636_DEVICE_TECH_OFFSET] &
 			SFF8636_TRANS_TECH_MASK;
 
-	module_show_mit_compliance(value);
+	module_show_mit_compliance(value, MODULE_TYPE_SFF8636);
+
+	/* Device technology sub-fields (byte 147, bits 3-0) */
+	{
+		__u8 tech = map->page_00h[SFF8636_DEVICE_TECH_OFFSET];
+		bool v;
+
+		v = tech & SFF8636_DEV_TECH_ACTIVE_WAVE_LEN;
+		module_print_any_bool("Active wavelength control",
+				      NULL, v, YESNO(v));
+		v = tech & SFF8636_DEV_TECH_COOL_TRANS;
+		module_print_any_bool("Cooled transmitter", NULL, v, YESNO(v));
+		v = tech & SFF8636_DEV_TECH_APD_DETECTOR;
+		module_print_any_bool("APD/Pin detector", NULL, v, YESNO(v));
+		v = tech & SFF8636_DEV_TECH_TUNABLE;
+		module_print_any_bool("Transmitter tunable", NULL, v, YESNO(v));
+	}
 
 	if (value >= SFF8636_TRANS_COPPER_PAS_UNEQUAL) {
 		module_print_any_uint("Attenuation at 2.5GHz",
@@ -871,7 +727,7 @@ static void sff8636_show_dom(const struct sff8636_memory_map *map)
 	sd.rx_power_type = map->page_00h[SFF8636_DIAG_TYPE_OFFSET] &
 			   SFF8636_RX_PWR_TYPE_MASK;
 	sd.tx_power_type = map->page_00h[SFF8636_DIAG_TYPE_OFFSET] &
-			   SFF8636_RX_PWR_TYPE_MASK;
+			   SFF8636_TX_PWR_TYPE_MASK;
 
 	sff8636_dom_parse(map, &sd);
 
@@ -903,6 +759,58 @@ static void sff8636_show_dom(const struct sff8636_memory_map *map)
 		else
 			sff_show_thresholds(sd);
 	}
+}
+
+static void sff8636_show_ext_module_codes(const struct sff8636_memory_map *map)
+{
+	static const char *pfx = "Extended module code";
+	__u8 code = map->page_00h[SFF8636_EXT_MOD_CODE_OFFSET];
+
+	if (!code)
+		return;
+
+	if (code & SFF8636_EXT_MOD_INFINIBAND_HDR)
+		module_print_any_string(pfx, "InfiniBand HDR");
+	if (code & SFF8636_EXT_MOD_INFINIBAND_EDR)
+		module_print_any_string(pfx, "InfiniBand EDR");
+	if (code & SFF8636_EXT_MOD_INFINIBAND_FDR)
+		module_print_any_string(pfx, "InfiniBand FDR");
+	if (code & SFF8636_EXT_MOD_INFINIBAND_QDR)
+		module_print_any_string(pfx, "InfiniBand QDR");
+	if (code & SFF8636_EXT_MOD_INFINIBAND_DDR)
+		module_print_any_string(pfx, "InfiniBand DDR");
+	if (code & SFF8636_EXT_MOD_INFINIBAND_SDR)
+		module_print_any_string(pfx, "InfiniBand SDR");
+}
+
+static void sff8636_show_max_case_temp(const struct sff8636_memory_map *map)
+{
+	__u8 temp = map->page_00h[SFF8636_MAXCASE_TEMP_OFFSET];
+
+	if (temp == 0x00)
+		temp = 70;
+	module_print_any_uint("Max case temperature", temp, " degrees C");
+}
+
+static void sff8636_show_checksums(const struct sff8636_memory_map *map)
+{
+	__u8 sum = 0;
+	int i;
+
+	/* CC_BASE: sum bytes 128-190, compare with byte 191 */
+	for (i = 0x80; i <= 0xBE; i++)
+		sum += map->page_00h[i];
+	module_print_any_string("CC_BASE",
+				(sum == map->page_00h[SFF8636_CC_BASE_OFFSET]) ?
+				"pass" : "fail");
+
+	/* CC_EXT: sum bytes 192-222, compare with byte 223 */
+	sum = 0;
+	for (i = 0xC0; i <= 0xDE; i++)
+		sum += map->page_00h[i];
+	module_print_any_string("CC_EXT",
+				(sum == map->page_00h[SFF8636_CC_EXT_OFFSET]) ?
+				"pass" : "fail");
 }
 
 static void sff8636_show_signals(const struct sff8636_memory_map *map)
@@ -940,9 +848,16 @@ static void sff8636_show_page_zero(const struct sff8636_memory_map *map)
 	sff8636_show_ext_identifier(map);
 	sff8636_show_connector(map);
 	sff8636_show_transceiver(map);
+	sff8636_show_ext_module_codes(map);
 	sff8636_show_encoding(map);
-	module_show_value_with_unit(map->page_00h, SFF8636_BR_NOMINAL_OFFSET,
-				    "BR Nominal", 100, "Mbps");
+	if (map->page_00h[SFF8636_BR_NOMINAL_OFFSET] == 0xFF)
+		module_print_any_uint("BR Nominal",
+				      map->page_00h[SFF8636_EXT_BAUD_RATE_OFFSET] * 250,
+				      " Mbps");
+	else
+		module_show_value_with_unit(map->page_00h,
+					    SFF8636_BR_NOMINAL_OFFSET,
+					    "BR Nominal", 100, "Mbps");
 	sff8636_show_rate_identifier(map);
 	module_show_value_with_unit(map->page_00h, SFF8636_SM_LEN_OFFSET,
 				    "Length (SMF)", 1, "km");
@@ -964,10 +879,11 @@ static void sff8636_show_page_zero(const struct sff8636_memory_map *map)
 			  SFF8636_VENDOR_REV_END_OFFSET, "Vendor rev");
 	module_show_ascii(map->page_00h, SFF8636_VENDOR_SN_START_OFFSET,
 			  SFF8636_VENDOR_SN_END_OFFSET, "Vendor SN");
-	module_show_ascii(map->page_00h, SFF8636_DATE_YEAR_OFFSET,
-			  SFF8636_DATE_VENDOR_LOT_OFFSET + 1, "Date code");
+	module_show_date_code(map->page_00h, SFF8636_DATE_YEAR_OFFSET);
 	sff8636_show_revision_compliance(map->lower_memory,
 					 SFF8636_REV_COMPLIANCE_OFFSET);
+	sff8636_show_max_case_temp(map);
+	sff8636_show_checksums(map);
 	sff8636_show_signals(map);
 }
 
