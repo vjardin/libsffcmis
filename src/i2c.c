@@ -92,15 +92,21 @@ char *i2c_get_device_desc(const I2CDevice *device, char *buf, size_t size)
     char adapter_name[128] = "Unknown";
     char sysfs_path[PATH_MAX];
 
-    snprintf(sysfs_path, sizeof(sysfs_path), "/sys/class/i2c-adapter/i2c-%d/name", device->bus_num);
-
-    FILE *f = fopen(sysfs_path, "r");
-    if (f) {
-        if (fgets(adapter_name, sizeof(adapter_name), f)) {
-            /* drop trailing newline if any */
-            adapter_name[strcspn(adapter_name, "\n")] = 0;
+    /* Try i2c-adapter first, fall back to i2c-dev */
+    static const char *sysfs_fmts[] = {
+        "/sys/class/i2c-adapter/i2c-%d/name",
+        "/sys/class/i2c-dev/i2c-%d/name",
+    };
+    for (unsigned i = 0; i < sizeof(sysfs_fmts) / sizeof(sysfs_fmts[0]); i++) {
+        snprintf(sysfs_path, sizeof(sysfs_path), sysfs_fmts[i], device->bus_num);
+        FILE *f = fopen(sysfs_path, "r");
+        if (f) {
+            if (fgets(adapter_name, sizeof(adapter_name), f)) {
+                adapter_name[strcspn(adapter_name, "\n")] = 0;
+            }
+            fclose(f);
+            break;
         }
-        fclose(f);
     }
 
     memset(buf, 0, size);
@@ -183,6 +189,7 @@ ssize_t i2c_ioctl_read(const I2CDevice *device, unsigned int iaddr, void *buf, s
 
         total_read += chunk;
         remaining  -= chunk;
+        iaddr      += chunk;
     }
 
     return total_read;

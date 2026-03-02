@@ -93,7 +93,7 @@ i2c_init(struct cmd_context *ctx)
 
 	parse_argv_init(ctx);
 
-	if (ctx->bus_num == 0) {
+	if (ctx->bus_num < 0) {
 		printf("invalid bus_num");
 		return -EINVAL;
 	}
@@ -112,7 +112,31 @@ i2c_init(struct cmd_context *ctx)
 
 	ctx->device->bus = bus;
 
-	return bus;
+	return 0;
+}
+
+/**
+ * Select bank (0x7E) and page (0x7F) registers before accessing
+ * upper memory (offset >= 0x80).  Lower memory (page 0, offset
+ * 0x00-0x7F) does not require page selection.
+ */
+static int
+eeprom_select_page(struct cmd_context *ctx, const struct module_eeprom *request)
+{
+	if (request->offset < 0x80)
+		return 0;  /* lower memory, no page select needed */
+
+	__u8 bank = request->bank;
+	int ret = i2c_ioctl_write(ctx->device, 0x7E, &bank, 1);
+	if (ret < 0)
+		return ret;
+
+	__u8 page = request->page;
+	ret = i2c_ioctl_write(ctx->device, 0x7F, &page, 1);
+	if (ret < 0)
+		return ret;
+
+	return 0;
 }
 
 int
@@ -126,23 +150,47 @@ get_eeprom_page(struct cmd_context *ctx, struct module_eeprom *request)
 	assert(ctx->bus_num >= 0);
 
 	ctx->device->addr = request->i2c_address & 0x3ff;
+
+	int ret = eeprom_select_page(ctx, request);
+	if (ret < 0)
+		return ret;
+
 	request->data = malloc(request->length);
 
-#if 0
-	int ret = i2c_ioctl_read(ctx->device, request->offset, request->data, request->length);
+	ret = i2c_ioctl_read(ctx->device, request->offset, request->data, request->length);
 	if (ret < 0)
 		goto err;
-#else
-	int ret = i2c_read(ctx->device, request->offset, request->data, request->length);
-	if (ret < 0)
-		goto err;
-#endif
 
 	return 0;
 
 err:
 	free(request->data);
 	return ret;
+}
+
+int
+set_eeprom_page(struct cmd_context *ctx, struct module_eeprom *request)
+{
+	assert(ctx != NULL);
+
+	if (!request || !request->data || request->i2c_address > ETH_I2C_MAX_ADDRESS)
+		return -EINVAL;
+
+	assert(ctx->bus_num >= 0);
+
+	ctx->device->addr = request->i2c_address & 0x3ff;
+
+	int ret = eeprom_select_page(ctx, request);
+	if (ret < 0)
+		return ret;
+
+	/* Write data to the target offset */
+	ret = i2c_ioctl_write(ctx->device, request->offset, request->data,
+			      request->length);
+	if (ret < 0)
+		return ret;
+
+	return 0;
 }
 
 #define  MODULE_ID_OFFSET				0x00
@@ -213,6 +261,9 @@ int eeprom_parse(struct cmd_context *ctx)
 	case MODULE_ID_SFP_DD_CMIS:
 	case MODULE_ID_SFP_PLUS_CMIS:
 		return cmis_show_all_nl(ctx);
+	case MODULE_ID_XFP:
+	case MODULE_ID_XFP_E:
+		return xfp_show_all_nl(ctx);
 	default:
 		printf("Warning %s:%d: unsupported module 0x%x\n", __func__, __LINE__, request.data[0]);
 		return 0;
