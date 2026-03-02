@@ -76,6 +76,17 @@
     "t72_xfp_raw_memory":         { "expect": "skip", "reason": "XFP-only test" },
     "t73_xfp_text_serial":        { "expect": "skip", "reason": "XFP-only test" },
     "t74_xfp_text_diag":          { "expect": "skip", "reason": "XFP-only test" },
-    "t75_xfp_temp_sane":          { "expect": "skip", "reason": "XFP-only test" }
+    "t75_xfp_temp_sane":          { "expect": "skip", "reason": "XFP-only test" },
+
+    "t76_xfp_device_tech":        { "expect": "skip", "reason": "XFP-only test" },
+    "t77_xfp_cdr_support":        { "expect": "skip", "reason": "XFP-only test" },
+    "t78_xfp_checksums":          { "expect": "skip", "reason": "XFP-only test" },
+    "t79_xfp_ext_int_flags":      { "expect": "skip", "reason": "XFP-only test" },
+    "t80_xfp_int_masks":          { "expect": "skip", "reason": "XFP-only test" },
+    "t81_xfp_signal_cond":        { "expect": "skip", "reason": "XFP-only test" },
+    "t82_xfp_gen_ctrl":           { "expect": "skip", "reason": "XFP-only test" },
+    "t83_xfp_power_supply":       { "expect": "skip", "reason": "XFP-only test" },
+    "t84_xfp_epon_text":          { "expect": "skip", "reason": "XFP-only test" },
+    "t85_xfp_text_new_fields":    { "expect": "skip", "reason": "XFP-only test" }
   }
 }

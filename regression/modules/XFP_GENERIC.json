@@ -76,6 +76,17 @@
     "t72_xfp_raw_memory":         { "expect": "pass" },
     "t73_xfp_text_serial":        { "expect": "pass" },
     "t74_xfp_text_diag":          { "expect": "pass" },
-    "t75_xfp_temp_sane":          { "expect": "pass" }
+    "t75_xfp_temp_sane":          { "expect": "pass" },
+
+    "t76_xfp_device_tech":        { "expect": "pass" },
+    "t77_xfp_cdr_support":        { "expect": "pass" },
+    "t78_xfp_checksums":          { "expect": "pass" },
+    "t79_xfp_ext_int_flags":      { "expect": "pass" },
+    "t80_xfp_int_masks":          { "expect": "pass" },
+    "t81_xfp_signal_cond":        { "expect": "pass" },
+    "t82_xfp_gen_ctrl":           { "expect": "pass" },
+    "t83_xfp_power_supply":       { "expect": "pass" },
+    "t84_xfp_epon_text":          { "expect": "pass" },
+    "t85_xfp_text_new_fields":    { "expect": "pass" }
   }
 }
