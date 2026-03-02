@@ -11,6 +11,7 @@ SRCS += json_print.c
 SRCS += json_writer.c
 SRCS += module-common.c
 SRCS += sff-common.c
+SRCS += sff-common-ext.c
 SRCS += sfpdiag.c
 
 SRCS += i2c.c

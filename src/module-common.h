@@ -119,6 +119,11 @@ enum module_type {
 #define CMIS_COPPER_F_EQUAL			0x0D
 #define CMIS_COPPER_N_EQUAL			0x0E
 #define CMIS_COPPER_LINEAR_EQUAL		0x0F
+#define CMIS_CBAND_TUNABLE			0x10
+#define CMIS_LBAND_TUNABLE			0x11
+#define CMIS_COPPER_NF_LINEAR_EQUAL		0x12
+#define CMIS_COPPER_F_LINEAR_EQUAL		0x13
+#define CMIS_COPPER_N_LINEAR_EQUAL		0x14
 
 /* Module Flags (Page 0) */
 #define CMIS_VCC_AW_OFFSET			0x09
@@ -275,13 +280,14 @@ void module_show_value_with_unit(const __u8 *id, unsigned int reg,
 				 const char *unit);
 void module_show_ascii(const __u8 *id, unsigned int first_reg,
 		       unsigned int last_reg, const char *name);
+void module_show_date_code(const __u8 *id, unsigned int year_offset);
 void module_show_lane_status(const char *name, unsigned int lane_cnt,
 			     const char *yes, const char *no,
 			     unsigned int value);
 void module_show_oui(const __u8 *id, int id_offset);
 void module_show_identifier(const __u8 *id, int id_offset);
 void module_show_connector(const __u8 *id, int ctor_offset);
-void module_show_mit_compliance(u16 value);
+void module_show_mit_compliance(u16 value, enum module_type type);
 void module_show_dom_mod_lvl_monitors(const struct sff_diags *sd);
 
 #endif /* MODULE_COMMON_H__ */

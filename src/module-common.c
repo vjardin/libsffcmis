@@ -307,6 +307,29 @@ void module_show_ascii(const __u8 *id, unsigned int first_reg,
 		printf("\n");
 }
 
+void module_show_date_code(const __u8 *id, unsigned int year_offset)
+{
+	char year[3]  = { id[year_offset],     id[year_offset + 1], 0 };
+	char month[3] = { id[year_offset + 2], id[year_offset + 3], 0 };
+	char day[3]   = { id[year_offset + 4], id[year_offset + 5], 0 };
+	char lot[3]   = { id[year_offset + 6], id[year_offset + 7], 0 };
+	char formatted[32];
+
+	snprintf(formatted, sizeof(formatted), "20%s-%s-%s", year, month, day);
+
+	/* Append lot code if present (not spaces or NUL) */
+	if (lot[0] != ' ' && lot[0] != 0)
+		snprintf(formatted + strlen(formatted),
+			 sizeof(formatted) - strlen(formatted),
+			 " (lot %s)", lot);
+
+	if (is_json_context()) {
+		print_string(PRINT_JSON, "date_code", "%s", formatted);
+	} else {
+		printf("\t%-41s : %s\n", "Date code", formatted);
+	}
+}
+
 void module_show_lane_status(const char *name, unsigned int lane_cnt,
 			     const char *yes, const char *no,
 			     unsigned int value)
@@ -576,80 +599,141 @@ void module_show_connector(const __u8 *id, int ctor_offset)
 				ctor_description);
 }
 
-void module_show_mit_compliance(u16 value)
+void module_show_mit_compliance(u16 value, enum module_type type)
 {
 	static const char *cc = "Copper cable,";
 	char description[SFF_MAX_DESC_LEN];
 
-	switch (value) {
-	case MODULE_850_VCSEL:
-		strncpy(description, "850 nm VCSEL", SFF_MAX_DESC_LEN);
-		break;
-	case CMIS_1310_VCSEL:
-	case SFF8636_TRANS_1310_VCSEL:
-		strncpy(description, "1310 nm VCSEL", SFF_MAX_DESC_LEN);
-		break;
-	case CMIS_1550_VCSEL:
-	case SFF8636_TRANS_1550_VCSEL:
-		strncpy(description, "1550 nm VCSEL", SFF_MAX_DESC_LEN);
-		break;
-	case CMIS_1310_FP:
-	case SFF8636_TRANS_1310_FP:
-		strncpy(description, "1310 nm FP", SFF_MAX_DESC_LEN);
-		break;
-	case CMIS_1310_DFB:
-	case SFF8636_TRANS_1310_DFB:
-		strncpy(description, "1310 nm DFB", SFF_MAX_DESC_LEN);
-		break;
-	case CMIS_1550_DFB:
-	case SFF8636_TRANS_1550_DFB:
-		strncpy(description, "1550 nm DFB", SFF_MAX_DESC_LEN);
-		break;
-	case CMIS_1310_EML:
-	case SFF8636_TRANS_1310_EML:
-		strncpy(description, "1310 nm EML", SFF_MAX_DESC_LEN);
-		break;
-	case CMIS_1550_EML:
-	case SFF8636_TRANS_1550_EML:
-		strncpy(description, "1550 nm EML", SFF_MAX_DESC_LEN);
-		break;
-	case CMIS_OTHERS:
-	case SFF8636_TRANS_OTHERS:
-		strncpy(description, "Others/Undefined", SFF_MAX_DESC_LEN);
-		break;
-	case CMIS_1490_DFB:
-	case SFF8636_TRANS_1490_DFB:
-		strncpy(description, "1490 nm DFB", SFF_MAX_DESC_LEN);
-		break;
-	case CMIS_COPPER_UNEQUAL:
-	case SFF8636_TRANS_COPPER_PAS_UNEQUAL:
-		snprintf(description, SFF_MAX_DESC_LEN, "%s unequalized", cc);
-		break;
-	case CMIS_COPPER_PASS_EQUAL:
-	case SFF8636_TRANS_COPPER_PAS_EQUAL:
-		snprintf(description, SFF_MAX_DESC_LEN, "%s passive equalized",
-			 cc);
-		break;
-	case CMIS_COPPER_NF_EQUAL:
-	case SFF8636_TRANS_COPPER_LNR_FAR_EQUAL:
-		snprintf(description, SFF_MAX_DESC_LEN,
-			 "%s near and far end limiting active equalizers", cc);
-		break;
-	case CMIS_COPPER_F_EQUAL:
-	case SFF8636_TRANS_COPPER_FAR_EQUAL:
-		snprintf(description, SFF_MAX_DESC_LEN,
-			 "%s far end limiting active equalizers", cc);
-		break;
-	case CMIS_COPPER_N_EQUAL:
-	case SFF8636_TRANS_COPPER_NEAR_EQUAL:
-		snprintf(description, SFF_MAX_DESC_LEN,
-			 "%s near end limiting active equalizers", cc);
-		break;
-	case CMIS_COPPER_LINEAR_EQUAL:
-	case SFF8636_TRANS_COPPER_LNR_EQUAL:
-		snprintf(description, SFF_MAX_DESC_LEN, "%s linear active equalizers",
-			 cc);
-		break;
+	description[0] = '\0';
+
+	if (type == MODULE_TYPE_CMIS) {
+		switch (value) {
+		case MODULE_850_VCSEL:
+			strncpy(description, "850 nm VCSEL", SFF_MAX_DESC_LEN);
+			break;
+		case CMIS_1310_VCSEL:
+			strncpy(description, "1310 nm VCSEL", SFF_MAX_DESC_LEN);
+			break;
+		case CMIS_1550_VCSEL:
+			strncpy(description, "1550 nm VCSEL", SFF_MAX_DESC_LEN);
+			break;
+		case CMIS_1310_FP:
+			strncpy(description, "1310 nm FP", SFF_MAX_DESC_LEN);
+			break;
+		case CMIS_1310_DFB:
+			strncpy(description, "1310 nm DFB", SFF_MAX_DESC_LEN);
+			break;
+		case CMIS_1550_DFB:
+			strncpy(description, "1550 nm DFB", SFF_MAX_DESC_LEN);
+			break;
+		case CMIS_1310_EML:
+			strncpy(description, "1310 nm EML", SFF_MAX_DESC_LEN);
+			break;
+		case CMIS_1550_EML:
+			strncpy(description, "1550 nm EML", SFF_MAX_DESC_LEN);
+			break;
+		case CMIS_OTHERS:
+			strncpy(description, "Others/Undefined", SFF_MAX_DESC_LEN);
+			break;
+		case CMIS_1490_DFB:
+			strncpy(description, "1490 nm DFB", SFF_MAX_DESC_LEN);
+			break;
+		case CMIS_COPPER_UNEQUAL:
+			snprintf(description, SFF_MAX_DESC_LEN, "%s unequalized", cc);
+			break;
+		case CMIS_COPPER_PASS_EQUAL:
+			snprintf(description, SFF_MAX_DESC_LEN, "%s passive equalized", cc);
+			break;
+		case CMIS_COPPER_NF_EQUAL:
+			snprintf(description, SFF_MAX_DESC_LEN,
+				 "%s near and far end limiting active equalizers", cc);
+			break;
+		case CMIS_COPPER_F_EQUAL:
+			snprintf(description, SFF_MAX_DESC_LEN,
+				 "%s far end limiting active equalizers", cc);
+			break;
+		case CMIS_COPPER_N_EQUAL:
+			snprintf(description, SFF_MAX_DESC_LEN,
+				 "%s near end limiting active equalizers", cc);
+			break;
+		case CMIS_COPPER_LINEAR_EQUAL:
+			snprintf(description, SFF_MAX_DESC_LEN,
+				 "%s linear active equalizers", cc);
+			break;
+		case CMIS_CBAND_TUNABLE:
+			strncpy(description, "C-band tunable laser", SFF_MAX_DESC_LEN);
+			break;
+		case CMIS_LBAND_TUNABLE:
+			strncpy(description, "L-band tunable laser", SFF_MAX_DESC_LEN);
+			break;
+		case CMIS_COPPER_NF_LINEAR_EQUAL:
+			snprintf(description, SFF_MAX_DESC_LEN,
+				 "%s near and far end linear active equalizers", cc);
+			break;
+		case CMIS_COPPER_F_LINEAR_EQUAL:
+			snprintf(description, SFF_MAX_DESC_LEN,
+				 "%s far end linear active equalizers", cc);
+			break;
+		case CMIS_COPPER_N_LINEAR_EQUAL:
+			snprintf(description, SFF_MAX_DESC_LEN,
+				 "%s near end linear active equalizers", cc);
+			break;
+		}
+	} else {
+		switch (value) {
+		case MODULE_850_VCSEL:
+			strncpy(description, "850 nm VCSEL", SFF_MAX_DESC_LEN);
+			break;
+		case SFF8636_TRANS_1310_VCSEL:
+			strncpy(description, "1310 nm VCSEL", SFF_MAX_DESC_LEN);
+			break;
+		case SFF8636_TRANS_1550_VCSEL:
+			strncpy(description, "1550 nm VCSEL", SFF_MAX_DESC_LEN);
+			break;
+		case SFF8636_TRANS_1310_FP:
+			strncpy(description, "1310 nm FP", SFF_MAX_DESC_LEN);
+			break;
+		case SFF8636_TRANS_1310_DFB:
+			strncpy(description, "1310 nm DFB", SFF_MAX_DESC_LEN);
+			break;
+		case SFF8636_TRANS_1550_DFB:
+			strncpy(description, "1550 nm DFB", SFF_MAX_DESC_LEN);
+			break;
+		case SFF8636_TRANS_1310_EML:
+			strncpy(description, "1310 nm EML", SFF_MAX_DESC_LEN);
+			break;
+		case SFF8636_TRANS_1550_EML:
+			strncpy(description, "1550 nm EML", SFF_MAX_DESC_LEN);
+			break;
+		case SFF8636_TRANS_OTHERS:
+			strncpy(description, "Others/Undefined", SFF_MAX_DESC_LEN);
+			break;
+		case SFF8636_TRANS_1490_DFB:
+			strncpy(description, "1490 nm DFB", SFF_MAX_DESC_LEN);
+			break;
+		case SFF8636_TRANS_COPPER_PAS_UNEQUAL:
+			snprintf(description, SFF_MAX_DESC_LEN, "%s unequalized", cc);
+			break;
+		case SFF8636_TRANS_COPPER_PAS_EQUAL:
+			snprintf(description, SFF_MAX_DESC_LEN, "%s passive equalized", cc);
+			break;
+		case SFF8636_TRANS_COPPER_LNR_FAR_EQUAL:
+			snprintf(description, SFF_MAX_DESC_LEN,
+				 "%s near and far end limiting active equalizers", cc);
+			break;
+		case SFF8636_TRANS_COPPER_FAR_EQUAL:
+			snprintf(description, SFF_MAX_DESC_LEN,
+				 "%s far end limiting active equalizers", cc);
+			break;
+		case SFF8636_TRANS_COPPER_NEAR_EQUAL:
+			snprintf(description, SFF_MAX_DESC_LEN,
+				 "%s near end limiting active equalizers", cc);
+			break;
+		case SFF8636_TRANS_COPPER_LNR_EQUAL:
+			snprintf(description, SFF_MAX_DESC_LEN,
+				 "%s linear active equalizers", cc);
+			break;
+		}
 	}
 
 	sff_print_any_hex_field("Transmitter technology",

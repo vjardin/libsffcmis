@@ -15,6 +15,7 @@
 #include <malloc.h>
 #include <inttypes.h>
 #include <stdint.h>
+#include <math.h>
 
 #include "json_writer.h"
 
@@ -210,7 +211,10 @@ void jsonw_null(json_writer_t *self)
 
 void jsonw_float(json_writer_t *self, double num)
 {
-	jsonw_printf(self, "%g", num);
+	if (isnan(num) || isinf(num))
+		jsonw_printf(self, "null");
+	else
+		jsonw_printf(self, "%g", num);
 }
 
 void jsonw_hhu(json_writer_t *self, unsigned char num)

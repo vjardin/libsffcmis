@@ -33,6 +33,8 @@
 
 double convert_mw_to_dbm(double mw)
 {
+	if (mw <= 0.0)
+		return -40.0;
 	return (10. * log10(mw / 1000.)) + 30.;
 }
 
