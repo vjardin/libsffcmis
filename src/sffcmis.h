@@ -28,10 +28,12 @@ struct cmd_context {
 int i2c_init(struct cmd_context *ctx);
 char *i2c_get_device_desc(const I2CDevice *device, char *buf, size_t size);
 int get_eeprom_page(struct cmd_context *ctx, struct module_eeprom *request);
+int set_eeprom_page(struct cmd_context *ctx, struct module_eeprom *request);
 int eeprom_parse(struct cmd_context *ctx);
 
 int sff8079_show_all_nl(struct cmd_context *ctx);
 int sff8636_show_all_nl(struct cmd_context *ctx);
 int cmis_show_all_nl(struct cmd_context *ctx);
+int xfp_show_all_nl(struct cmd_context *ctx);
 
 #endif /* SFFCMIS_H */

@@ -20,6 +20,7 @@ SRCS += sffcmis.c
 SRCS += sfpid.c
 SRCS += qsfp.c
 SRCS += cmis.c
+SRCS += xfp.c
 
 OBJS        := $(SRCS:.c=.o)
 
